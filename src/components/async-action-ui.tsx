@@ -5,7 +5,6 @@ import {
   findNodeHandle,
   Modal,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   useColorScheme,
@@ -13,6 +12,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
 
@@ -245,7 +245,7 @@ export function LoadingConfirmationButton({
   );
 
   return (
-    <Pressable
+    <Touchable
       accessibilityLabel={accessibilityLabel ?? (busy ? loadingLabel : label)}
       accessibilityRole="button"
       accessibilityState={{busy, disabled: blocked}}
@@ -263,7 +263,7 @@ export function LoadingConfirmationButton({
           {content}
         </LinearGradient>
       )}
-    </Pressable>
+    </Touchable>
   );
 }
 

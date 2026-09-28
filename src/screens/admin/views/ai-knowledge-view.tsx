@@ -1,5 +1,6 @@
 import {useCallback, useMemo, useState} from 'react';
 import {ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {
@@ -286,9 +287,9 @@ export default function AdminAiKnowledgeView({data}: AdminViewProps) {
                 <Text style={styles.sheetTitle}>ข้อมูลต้นทางของคำแนะนำ</Text>
                 <Text style={styles.sheetSub}>{text(audit?.recommendation.title as string, 'กำลังโหลด...')}</Text>
               </View>
-              <Pressable accessibilityLabel="ปิด" onPress={closeAudit} style={({pressed}) => [styles.close, pressed && ui.pressed]}>
+              <Touchable accessibilityLabel="ปิด" onPress={closeAudit} style={({pressed}) => [styles.close, pressed && ui.pressed]}>
                 <MaterialIcon color={C.pine} name="close" size={20} />
-              </Pressable>
+              </Touchable>
             </View>
 
             <ScrollView contentContainerStyle={styles.sheetBody} showsVerticalScrollIndicator={false}>

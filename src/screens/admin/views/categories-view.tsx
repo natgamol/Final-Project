@@ -1,5 +1,6 @@
 import {useCallback, useState} from 'react';
-import {ActivityIndicator, Pressable, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {MaterialIcon} from '@/screens/native/user/user-ui';
 import {AdminCard, C, Empty, Pill, Row, SmallButton, items, styles as ui, text} from '../admin-ui';
@@ -65,10 +66,10 @@ export default function AdminCategoriesView({actionLoading, data, onAction}: Adm
   return (
     <>
       <AdminCard style={ui.composer}>
-        <Pressable onPress={toggleForm} style={ui.formToggle}>
+        <Touchable onPress={toggleForm} style={ui.formToggle}>
           <MaterialIcon color={C.pine} name={open ? 'close' : 'add'} size={18} />
           <Text style={ui.formToggleText}>{open ? 'ปิดฟอร์ม' : 'เพิ่มหมวดหมู่ใหม่'}</Text>
-        </Pressable>
+        </Touchable>
 
         {open ? (
           <View style={{marginTop: 15}}>
@@ -88,10 +89,10 @@ export default function AdminCategoriesView({actionLoading, data, onAction}: Adm
             <TextInput onChangeText={(value) => patch({color: value})} placeholder="เช่น #E2796D" style={ui.input} value={form.color} />
             <Text style={ui.inputLabel}>ลำดับ (Sort Order)</Text>
             <TextInput keyboardType="numeric" onChangeText={(value) => patch({sortOrder: value})} style={ui.input} value={form.sortOrder} />
-            <Pressable disabled={saving} onPress={save} style={({pressed}) => [ui.publishButton, (pressed || saving) && ui.pressed]}>
+            <Touchable disabled={saving} onPress={save} style={({pressed}) => [ui.publishButton, (pressed || saving) && ui.pressed]}>
               {saving ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="save" size={18} />}
               <Text style={ui.publishText}>{saving ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'สร้างหมวดหมู่'}</Text>
-            </Pressable>
+            </Touchable>
           </View>
         ) : null}
       </AdminCard>

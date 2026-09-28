@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {ADD_ITEM_OPTIONS} from '@/components/add-item-sheet';
 import {Card, MaterialIcon, USER_LEFT_TABS, USER_RIGHT_TABS, UserShell, type UserNavigate} from './user-ui';
@@ -158,9 +159,9 @@ export default function HelpScreen({onNavigate}: {onNavigate: UserNavigate}) {
 
   return <UserShell onNavigate={onNavigate}>
     <View style={styles.pageHead}>
-      <Pressable onPress={() => onNavigate('smartlife_profile')} style={({pressed}) => [styles.back, pressed && styles.pressed]}>
+      <Touchable onPress={() => onNavigate('smartlife_profile')} style={({pressed}) => [styles.back, pressed && styles.pressed]}>
         <MaterialIcon name="arrow_back_ios_new" size={18} />
-      </Pressable>
+      </Touchable>
       <View style={{flex: 1}}>
         <Text style={styles.title}>คู่มือการใช้งาน</Text>
         <Text style={styles.subtitle}>แตะหัวข้อเพื่อดูวิธีใช้แบบละเอียด พร้อมรูปตัวอย่างว่าต้องกดตรงไหน</Text>
@@ -169,7 +170,7 @@ export default function HelpScreen({onNavigate}: {onNavigate: UserNavigate}) {
     {SECTIONS.map((section) => {
       const open = openId === section.id;
       return <Card key={section.id} style={styles.card}>
-        <Pressable
+        <Touchable
           accessibilityRole="button"
           accessibilityState={{expanded: open}}
           onPress={() => setOpenId(open ? null : section.id)}
@@ -178,7 +179,7 @@ export default function HelpScreen({onNavigate}: {onNavigate: UserNavigate}) {
           <View style={styles.icon}><MaterialIcon color={C.sage} name={section.icon} size={22} /></View>
           <Text style={styles.sectionTitle}>{section.title}</Text>
           <MaterialIcon color={C.muted} name={open ? 'expand_less' : 'expand_more'} size={22} />
-        </Pressable>
+        </Touchable>
         {open ? <>
           <Text style={styles.sectionBody}>{section.body}</Text>
           {section.visual ? <View style={styles.visualBlock}>{section.visual()}</View> : null}

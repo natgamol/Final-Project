@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
-import {ActivityIndicator, Platform, Pressable, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Platform, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import LoadingAndSuccessModal, {type FeedbackPhase} from '@/components/loading-success-modal';
@@ -112,17 +113,17 @@ export default function GoogleCalendarSyncCard({onSynced, uid}: {onSynced: () =>
 
       {syncError ? <View accessibilityLiveRegion="polite" style={styles.errorBox}><MaterialIcon color="#9b4f52" name="error" size={16} /><Text style={styles.errorText}>{syncError}</Text></View> : null}
 
-      <Pressable accessibilityLabel="ซิงก์กับ Google Calendar" accessibilityRole="button" accessibilityState={{busy, disabled: busy}} disabled={busy} onPress={sync} style={({pressed}) => [styles.button, pressed && !busy && styles.pressed]}>
+      <Touchable accessibilityLabel="ซิงก์กับ Google Calendar" accessibilityRole="button" accessibilityState={{busy, disabled: busy}} disabled={busy} onPress={sync} style={({pressed}) => [styles.button, pressed && !busy && styles.pressed]}>
         <LinearGradient colors={['rgba(255,255,255,.98)', 'rgba(247,248,252,.94)']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.buttonGradient}>
           {busy ? <ActivityIndicator color="#5d805c" size="small" /> : <MaterialIcon color="#5d805c" name={connected ? 'sync' : 'link'} size={20} />}
           <Text style={styles.buttonText}>{busy ? 'กำลังดำเนินการ...' : connected ? 'ซิงก์อีกครั้ง' : 'เชื่อมและซิงก์ Google Calendar'}</Text>
           {!busy ? <MaterialIcon color="#7b8278" name="arrow_forward" size={18} /> : null}
         </LinearGradient>
-      </Pressable>
-      {connected ? <Pressable accessibilityLabel="ยกเลิกการเชื่อม Google Calendar" accessibilityRole="button" disabled={busy} onPress={confirmDisconnect} style={({pressed}) => [styles.disconnect, pressed && !busy && styles.pressed]}>
+      </Touchable>
+      {connected ? <Touchable accessibilityLabel="ยกเลิกการเชื่อม Google Calendar" accessibilityRole="button" disabled={busy} onPress={confirmDisconnect} style={({pressed}) => [styles.disconnect, pressed && !busy && styles.pressed]}>
         <MaterialIcon color="rgba(255,255,255,.9)" name="link_off" size={15} />
         <Text style={styles.disconnectText}>ยกเลิกการเชื่อม</Text>
-      </Pressable> : null}
+      </Touchable> : null}
     </LinearGradient>
     <LoadingAndSuccessModal phase={feedback?.phase ?? 'loading'} subtitle={feedback?.subtitle ?? ''} title={feedback?.title ?? ''} visible={Boolean(feedback)} />
     <ConfirmDialog

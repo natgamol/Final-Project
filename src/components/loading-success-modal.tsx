@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
-import {Animated, Easing, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Animated, Easing, Modal, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 export type FeedbackPhase = 'loading' | 'success';
@@ -127,9 +128,9 @@ export default function LoadingAndSuccessModal({
               <LinearGradient colors={phase === 'success' ? ['#71956d', '#9297bb'] : ['#9297bb', '#71956d', '#c1cda9']} end={{x: 1, y: 0}} start={{x: 0, y: 0}} style={StyleSheet.absoluteFill} />
             </Animated.View>
           </View>
-          {onCancel && phase === 'loading' ? <Pressable accessibilityLabel="ยกเลิก" accessibilityRole="button" onPress={onCancel} style={({pressed}) => [styles.cancel, pressed && styles.cancelPressed]}>
+          {onCancel && phase === 'loading' ? <Touchable accessibilityLabel="ยกเลิก" accessibilityRole="button" onPress={onCancel} style={({pressed}) => [styles.cancel, pressed && styles.cancelPressed]}>
             <Text style={styles.cancelText}>ยกเลิก</Text>
-          </Pressable> : null}
+          </Touchable> : null}
         </LinearGradient>
       </Animated.View>
     </Animated.View>

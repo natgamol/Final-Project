@@ -1,4 +1,5 @@
-import {Pressable, Text, View} from 'react-native';
+import {Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {MaterialIcon} from '@/screens/native/user/user-ui';
 import {AdminCard, C, Empty, Row, SectionHead, date, items, number, styles as ui, text} from '../admin-ui';
@@ -17,10 +18,10 @@ export default function AdminSystemHealthView({data, onLogout, reload}: Props) {
 
   return (
     <>
-      <Pressable onPress={() => { reload(); }} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
+      <Touchable onPress={() => { reload(); }} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
         <MaterialIcon color={C.pine} name="refresh" size={16} />
         <Text style={ui.refreshButtonText}>รีเฟรชสถานะ</Text>
-      </Pressable>
+      </Touchable>
 
       <AdminCard>
         <SectionHead meta={`${list.length} บริการ`} title="สถานะบริการ" />
@@ -59,10 +60,10 @@ export default function AdminSystemHealthView({data, onLogout, reload}: Props) {
         }) : <Empty label="กำลังตรวจสอบสถานะระบบ" />}
       </AdminCard>
 
-      <Pressable onPress={onLogout} style={({pressed}) => [ui.logout, pressed && ui.pressed]}>
+      <Touchable onPress={onLogout} style={({pressed}) => [ui.logout, pressed && ui.pressed]}>
         <MaterialIcon color={C.red} name="logout" size={19} />
         <Text style={ui.logoutText}>ออกจากระบบ Admin</Text>
-      </Pressable>
+      </Touchable>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import {useMemo, useState} from 'react';
-import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {StyleSheet, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {filterUsers, sortUsers, type AdminUserInput} from '@/admin/analytics';
 import {MaterialIcon} from '@/screens/native/user/user-ui';
@@ -102,9 +103,9 @@ export default function UserPicker({subtitle}: {subtitle?: string}) {
           value={search}
         />
         {search ? (
-          <Pressable accessibilityLabel="ล้างคำค้นหา" onPress={() => { setSearch(''); setVisible(PAGE_SIZE); }}>
+          <Touchable accessibilityLabel="ล้างคำค้นหา" onPress={() => { setSearch(''); setVisible(PAGE_SIZE); }}>
             <MaterialIcon color={C.muted} name="close" size={18} />
-          </Pressable>
+          </Touchable>
         ) : null}
       </View>
 
@@ -116,7 +117,7 @@ export default function UserPicker({subtitle}: {subtitle?: string}) {
       {shown.map((user) => {
         const active = user.uid === selectedUid;
         return (
-          <Pressable
+          <Touchable
             key={user.uid}
             onPress={() => { selectUser(user.uid); setExpanded(false); }}
             style={({pressed}) => [local.userRow, active && local.userRowActive, pressed && ui.pressed]}
@@ -130,15 +131,15 @@ export default function UserPicker({subtitle}: {subtitle?: string}) {
             </View>
             {user.disabled ? <Text style={local.disabledTag}>ระงับ</Text> : null}
             {active ? <MaterialIcon color={C.pine} name="check_circle" size={18} /> : null}
-          </Pressable>
+          </Touchable>
         );
       })}
 
       {matches.length > shown.length ? (
-        <Pressable onPress={() => setVisible((current) => current + PAGE_SIZE)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
+        <Touchable onPress={() => setVisible((current) => current + PAGE_SIZE)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
           <MaterialIcon color={C.pine} name="expand_more" size={16} />
           <Text style={ui.refreshButtonText}>ดูเพิ่มอีก {Math.min(PAGE_SIZE, matches.length - shown.length)} คน</Text>
-        </Pressable>
+        </Touchable>
       ) : null}
 
       <View style={local.footer}>

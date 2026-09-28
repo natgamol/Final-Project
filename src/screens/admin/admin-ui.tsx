@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react';
-import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {MaterialIcon} from '@/screens/native/user/user-ui';
@@ -184,7 +185,7 @@ export function Row({icon = 'circle', title, detail, tone = 'green', side, child
     </View>
   );
   if (!onPress) return content;
-  return <Pressable onPress={onPress} style={({pressed}) => pressed && styles.pressed}>{content}</Pressable>;
+  return <Touchable onPress={onPress} style={({pressed}) => pressed && styles.pressed}>{content}</Touchable>;
 }
 
 export function SummaryAction({icon, label, value, accent = 'green', onPress, hint = 'ข้อมูลจาก Firebase'}: {
@@ -201,7 +202,7 @@ export function SummaryAction({icon, label, value, accent = 'green', onPress, hi
   const iconColor = purple ? '#6572b1' : rose ? '#b98080' : '#5a8d5d';
   const iconSoft = purple ? '#d8ddf1' : rose ? '#ead4d4' : '#dcebd9';
   return (
-    <Pressable disabled={!onPress} onPress={onPress} style={({pressed}) => pressed && styles.pressed}>
+    <Touchable disabled={!onPress} onPress={onPress} style={({pressed}) => pressed && styles.pressed}>
       <LinearGradient colors={colors} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.summaryAction}>
         <View style={[styles.summaryIcon, {backgroundColor: iconSoft}]}><MaterialIcon color={iconColor} name={icon} size={22} /></View>
         <View style={styles.summaryCopy}>
@@ -211,7 +212,7 @@ export function SummaryAction({icon, label, value, accent = 'green', onPress, hi
         </View>
         <MaterialIcon color={purple ? '#465382' : rose ? '#8b5d5d' : C.pine} name="chevron_right" size={23} />
       </LinearGradient>
-    </Pressable>
+    </Touchable>
   );
 }
 
@@ -271,14 +272,14 @@ export function UserBarChart({points, color = C.sage, onSelectUser, emptyLabel =
         );
         if (!onSelectUser) return <View key={point.uid}>{row}</View>;
         return (
-          <Pressable
+          <Touchable
             accessibilityLabel={`ดูข้อมูลของ ${point.label}`}
             key={point.uid}
             onPress={() => onSelectUser(point.uid)}
             style={({pressed}) => pressed && styles.pressed}
           >
             {row}
-          </Pressable>
+          </Touchable>
         );
       })}
     </View>
@@ -318,12 +319,12 @@ export function FeatureSection({icon, title, subtitle, accent, gradient, onOpen,
       <View style={styles.featureBody}>
         {children}
         {footnote ? <Text style={styles.featureFootnote}>{footnote}</Text> : null}
-        <Pressable onPress={onOpen} style={({pressed}) => pressed && styles.pressed}>
+        <Touchable onPress={onOpen} style={({pressed}) => pressed && styles.pressed}>
           <LinearGradient colors={gradient} end={{x: 1, y: 0}} start={{x: 0, y: 0}} style={styles.featureButton}>
             <Text style={styles.featureButtonText}>{openLabel}</Text>
             <MaterialIcon color="#fff" name="arrow_forward" size={18} />
           </LinearGradient>
-        </Pressable>
+        </Touchable>
       </View>
     </LinearGradient>
   );
@@ -335,7 +336,7 @@ export function Pill({label, selected, onPress, color}: {color?: string; label: 
     // further down the same screen -- "ต้องตรวจสอบ" is both a filter and a
     // status badge -- and a bare label leaves them indistinguishable to a
     // screen reader. `selected` is exposed so the active filter is announced.
-    <Pressable
+    <Touchable
       accessibilityLabel={`ตัวกรอง ${label}`}
       accessibilityRole="button"
       accessibilityState={{selected}}
@@ -343,7 +344,7 @@ export function Pill({label, selected, onPress, color}: {color?: string; label: 
       style={({pressed}) => [styles.pill, selected && styles.pillActive, color && selected ? {backgroundColor: color} : null, pressed && styles.pressed]}
     >
       <Text style={[styles.pillText, selected && styles.pillTextActive]}>{label}</Text>
-    </Pressable>
+    </Touchable>
   );
 }
 
@@ -358,10 +359,10 @@ export function SmallButton({icon, label, tone, onPress, loading, disabled}: {
   const color = tone === 'red' ? C.red : tone === 'purple' ? '#6572b1' : tone === 'amber' ? C.amber : C.sage;
   const backgroundColor = tone === 'red' ? C.redSoft : tone === 'purple' ? '#E8EAF3' : tone === 'amber' ? C.amberSoft : '#f5f8f2';
   return (
-    <Pressable disabled={loading || disabled} onPress={onPress} style={({pressed}) => [styles.smallBtn, {backgroundColor}, (pressed || disabled) && styles.pressed]}>
+    <Touchable disabled={loading || disabled} onPress={onPress} style={({pressed}) => [styles.smallBtn, {backgroundColor}, (pressed || disabled) && styles.pressed]}>
       {loading ? <ActivityIndicator color={color} size="small" /> : <MaterialIcon color={color} name={icon} size={14} />}
       <Text style={[styles.smallBtnText, {color}]}>{loading ? '...' : label}</Text>
-    </Pressable>
+    </Touchable>
   );
 }
 

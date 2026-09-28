@@ -1,4 +1,5 @@
-import {Pressable, Text, View} from 'react-native';
+import {Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {MaterialIcon} from '@/screens/native/user/user-ui';
 import {AdminCard, C, SectionHead, styles as ui} from '../admin-ui';
@@ -26,14 +27,14 @@ function LinkList({links, onNavigate}: {links: Link[]; onNavigate: (page: string
   return (
     <>
       {links.map(([target, icon, title, detail]) => (
-        <Pressable key={target} onPress={() => onNavigate(target)} style={({pressed}) => [ui.menu, pressed && ui.pressed]}>
+        <Touchable key={target} onPress={() => onNavigate(target)} style={({pressed}) => [ui.menu, pressed && ui.pressed]}>
           <View style={ui.menuIcon}><MaterialIcon color={C.sage} name={icon} size={20} /></View>
           <View style={{flex: 1}}>
             <Text style={ui.rowTitle}>{title}</Text>
             <Text style={ui.rowDetail}>{detail}</Text>
           </View>
           <MaterialIcon color={C.pine2} name="chevron_right" size={22} />
-        </Pressable>
+        </Touchable>
       ))}
     </>
   );

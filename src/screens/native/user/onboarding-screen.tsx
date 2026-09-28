@@ -1,4 +1,5 @@
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {useInstitution} from '@/providers/institution-provider';
 import type {InstitutionType} from '@/types/institution';
@@ -14,7 +15,7 @@ function InstitutionTypeSelector({onChange, value}: {onChange: (value: Instituti
   return <View accessibilityLabel="เลือกประเภทสถานศึกษา" accessibilityRole="radiogroup" style={localStyles.optionList}>
     {OPTIONS.map((option) => {
       const selected = value === option.value;
-      return <Pressable
+      return <Touchable
         accessibilityLabel={option.label}
         accessibilityRole="radio"
         accessibilityState={{checked: selected}}
@@ -25,7 +26,7 @@ function InstitutionTypeSelector({onChange, value}: {onChange: (value: Instituti
         <View style={[localStyles.icon, selected && localStyles.iconSelected]}><MaterialIcon color={selected ? '#fff' : '#668d65'} name={option.icon} size={24} /></View>
         <View style={localStyles.optionCopy}><Text style={localStyles.optionTitle}>{option.label}</Text><Text style={localStyles.optionDescription}>{option.description}</Text></View>
         <View style={[localStyles.radio, selected && localStyles.radioSelected]}>{selected ? <View style={localStyles.radioDot} /> : null}</View>
-      </Pressable>;
+      </Touchable>;
     })}
   </View>;
 }
@@ -70,7 +71,7 @@ export default function OnboardingScreen({page, onNavigate}: {page: string; onNa
         <View style={localStyles.progress}>{[1, 2, 3].map((item) => <View key={item} style={[localStyles.progressItem, {backgroundColor: item <= step ? '#668d65' : '#cbd6c7'}]} />)}</View>
       </Card>
       <PrimaryButton disabled={step === 1 && !institutionType} label={step === 3 ? 'เข้าสู่ SmartLife' : 'ถัดไป'} onPress={continueOnboarding} />
-      {step > 1 ? <Pressable onPress={() => onNavigate('index')} style={localStyles.skip}><Text style={styles.rowSide}>ข้ามไปหน้าหลัก</Text></Pressable> : null}
+      {step > 1 ? <Touchable onPress={() => onNavigate('index')} style={localStyles.skip}><Text style={styles.rowSide}>ข้ามไปหน้าหลัก</Text></Touchable> : null}
     </View>
   </UserShell>;
 }

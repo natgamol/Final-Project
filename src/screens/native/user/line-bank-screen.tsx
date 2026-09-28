@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useState} from 'react';
-import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, } from 'react-native';
+import {ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
 import {MaterialIcon, UserGradientBackdrop, UserTabBar} from './user-ui';
 import {parseLineBankNotification} from '@/services/line-bank-parser';
@@ -57,9 +58,9 @@ export default function LineBankScreen({onNavigate, uid}: Props) {
       <ResponsiveSafeArea>
 
         <View style={styles.headerBar}>
-          <Pressable onPress={() => onNavigate('smartlife_finance_day')} style={styles.backButton}>
+          <Touchable onPress={() => onNavigate('smartlife_finance_day')} style={styles.backButton}>
             <MaterialIcon name="chevron_left" size={28} color={C.ink} />
-          </Pressable>
+          </Touchable>
           <View style={{flex: 1}}>
             <Text style={styles.headerEyebrow}>SmartLife Finance</Text>
             <Text style={styles.headerTitle}>อ่านแจ้งเตือนการเงิน</Text>
@@ -89,10 +90,10 @@ export default function LineBankScreen({onNavigate, uid}: Props) {
                 <Text style={styles.statusText}>มีคิวในเครื่อง {pendingItems.length} รายการ รายการที่ข้อมูลครบและผ่านการตรวจจะบันทึกอัตโนมัติ ส่วนที่ไม่ชัดหรืออาจซ้ำจะรอให้ตรวจ</Text>
               </View>
             </View>
-            <Pressable style={styles.statusButton}>
+            <Touchable style={styles.statusButton}>
               <MaterialIcon name="list_alt" size={18} color="#fff" />
               <Text style={styles.statusButtonText}>ดูรายการที่ระบบรับมา</Text>
-            </Pressable>
+            </Touchable>
           </View>
 
           <Text style={styles.fallbackLabel}>ทางเลือกสำรอง: วางข้อความเมื่อจำเป็น</Text>
@@ -107,20 +108,20 @@ export default function LineBankScreen({onNavigate, uid}: Props) {
             />
           </View>
 
-          <Pressable style={({pressed}) => [styles.analyzeButton, pressed && {opacity: 0.85}]} onPress={handleAnalyze}>
+          <Touchable style={({pressed}) => [styles.analyzeButton, pressed && {opacity: 0.85}]} onPress={handleAnalyze}>
             {isAnalyzing ? <ActivityIndicator color="#fff" /> : <MaterialIcon name="search" size={20} color="#fff" />}
             <Text style={styles.analyzeButtonText}>วิเคราะห์ข้อความสำรอง</Text>
-          </Pressable>
+          </Touchable>
 
           <View style={styles.bottomTabs}>
-            <Pressable style={styles.tabItem}>
+            <Touchable style={styles.tabItem}>
               <MaterialIcon name="checklist" size={18} color="#7284b3" />
               <Text style={styles.tabText}>รายการรอตรวจ</Text>
-            </Pressable>
-            <Pressable style={styles.tabItem}>
+            </Touchable>
+            <Touchable style={styles.tabItem}>
               <MaterialIcon name="settings" size={18} color="#7284b3" />
               <Text style={styles.tabText}>ตั้งค่าการเชื่อมต่อ</Text>
-            </Pressable>
+            </Touchable>
           </View>
 
           <View style={styles.bottomSpacer} />

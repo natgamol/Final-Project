@@ -1,5 +1,6 @@
 import {useCallback, useMemo} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {buildUserSeries} from '@/admin/analytics';
 import {adminOverviewCounts, OVERVIEW_USER_LIMIT} from '@/services/admin-overview';
@@ -190,18 +191,18 @@ export default function AdminDashboardView({data, onNavigate}: AdminViewProps) {
           ['admin_ai_knowledge', 'auto_awesome', 'AI Knowledge Monitor', 'ข้อมูลที่ AI ใช้ประกอบคำแนะนำ'],
           ['admin_system_health', 'monitor_heart', 'System Health', 'สถานะบริการจากระบบจริง'],
         ] as const).map(([target, icon, title, detail]) => (
-          <Pressable key={target} onPress={() => onNavigate(target)} style={({pressed}) => [ui.menu, pressed && ui.pressed]}>
+          <Touchable key={target} onPress={() => onNavigate(target)} style={({pressed}) => [ui.menu, pressed && ui.pressed]}>
             <View style={ui.menuIcon}><MaterialIcon color={C.sage} name={icon} size={20} /></View>
             <View style={{flex: 1}}>
               <Text style={ui.rowTitle}>{title}</Text>
               <Text style={ui.rowDetail}>{detail}</Text>
             </View>
             <MaterialIcon color={C.pine2} name="chevron_right" size={22} />
-          </Pressable>
+          </Touchable>
         ))}
       </AdminCard>
 
-      <Pressable onPress={() => onNavigate('admin_system_health')} style={({pressed}) => pressed && ui.pressed}>
+      <Touchable onPress={() => onNavigate('admin_system_health')} style={({pressed}) => pressed && ui.pressed}>
         <AdminCard>
           <SectionHead meta="ตรวจสอบล่าสุด" title="System Health" />
           {status.length ? status.slice(0, 4).map((item) => {
@@ -221,9 +222,9 @@ export default function AdminDashboardView({data, onNavigate}: AdminViewProps) {
             );
           }) : <Empty label="ยังไม่มีสถานะบริการ" />}
         </AdminCard>
-      </Pressable>
+      </Touchable>
 
-      <Pressable onPress={() => onNavigate('admin_ocr_logs')} style={({pressed}) => pressed && ui.pressed}>
+      <Touchable onPress={() => onNavigate('admin_ocr_logs')} style={({pressed}) => pressed && ui.pressed}>
         <AdminCard>
           <SectionHead meta={`${scans.length} รายการ`} title="กิจกรรมล่าสุด" />
           {scans.length ? scans.slice(0, 4).map((item) => (
@@ -236,7 +237,7 @@ export default function AdminDashboardView({data, onNavigate}: AdminViewProps) {
             />
           )) : <Empty label="ยังไม่มีประวัติการสแกน" />}
         </AdminCard>
-      </Pressable>
+      </Touchable>
     </>
   );
 }

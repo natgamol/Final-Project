@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View, } from 'react-native';
+import {ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import Animated, {FadeIn, FadeOut, LinearTransition} from 'react-native-reanimated';
 import {CalendarList, CalendarProvider, WeekCalendar, type DateData} from 'react-native-calendars';
 import {Timestamp} from 'firebase/firestore';
@@ -389,12 +390,12 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
     const isToday = key === today;
     const dayEvents = grouped[key] ?? [];
     return (
-      <Pressable accessibilityLabel={`${formatLongDate(key)} มี ${dayEvents.length} รายการ`} accessibilityRole="button" accessibilityState={{selected}} onPress={() => openDay(key)} style={({pressed}) => [styles.dayCell, pressed && styles.pressed]}>
+      <Touchable accessibilityLabel={`${formatLongDate(key)} มี ${dayEvents.length} รายการ`} accessibilityRole="button" accessibilityState={{selected}} onPress={() => openDay(key)} style={({pressed}) => [styles.dayCell, pressed && styles.pressed]}>
         <View style={[styles.dayCircle, isToday && styles.todayCircle, selected && !isToday && styles.selectedCircle]}>
           <Text style={[styles.dayNumber, state === 'disabled' && styles.disabledDay, isToday && styles.todayNumber, selected && !isToday && styles.selectedNumber]}>{date.day}</Text>
         </View>
         <View style={styles.dots}>{dayEvents.slice(0, 3).map((event, index) => <View key={`${String(event.id)}-${index}`} style={[styles.dot, {backgroundColor: typeof event.color === 'string' ? event.color : index % 2 ? C.blue : C.green}]} />)}</View>
-      </Pressable>
+      </Touchable>
     );
   };
 
@@ -456,12 +457,12 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
     );
     if (mode === 'year') return (
       <View style={styles.yearGrid}>{yearMonths.map(({month, days}) => (
-        <Pressable key={month} onPress={() => { const next = `${visibleDate.slice(0, 4)}-${pad(month + 1)}-01`; setSelectedDate(next); setVisibleDate(next); anchorTo(next); setMode('month'); }} style={styles.miniMonth}>
+        <Touchable key={month} onPress={() => { const next = `${visibleDate.slice(0, 4)}-${pad(month + 1)}-01`; setSelectedDate(next); setVisibleDate(next); anchorTo(next); setMode('month'); }} style={styles.miniMonth}>
           <Text style={styles.miniMonthTitle}>{THAI_MONTH_NAMES[month]}</Text>
           <View style={styles.miniDays}>{days.map((key, index) => key ? (
             <View key={key} style={[styles.miniDay, key === today && styles.miniToday]}><Text style={[styles.miniDayText, key === today && styles.miniTodayText]}>{Number(key.slice(-2))}</Text>{grouped[key]?.length ? <View style={styles.miniDot} /> : null}</View>
           ) : <View key={`empty-${month}-${index}`} style={styles.miniDay} />)}</View>
-        </Pressable>
+        </Touchable>
       ))}</View>
     );
     return (
@@ -470,11 +471,11 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
           const active = key === selectedDate;
           const isToday = key === today;
           return (
-            <Pressable key={key} onPress={() => openDay(key)} style={({pressed}) => [styles.dayStripItem, pressed && styles.pressed]}>
+            <Touchable key={key} onPress={() => openDay(key)} style={({pressed}) => [styles.dayStripItem, pressed && styles.pressed]}>
               <Text style={[styles.dayStripName, isToday && styles.redText]}>{shortDay(key)}</Text>
               <View style={[styles.dayStripCircle, active && styles.dayStripActive, isToday && styles.todayCircle]}><Text style={[styles.dayStripNumber, active && styles.dayStripNumberActive, isToday && styles.todayNumber]}>{Number(key.slice(-2))}</Text></View>
               {grouped[key]?.length ? <View style={[styles.dayStripDot, active && styles.dayStripDotActive]} /> : null}
-            </Pressable>
+            </Touchable>
           );
         })}</View>
         <DayTimeline date={selectedDate} events={selectedEvents} isToday={selectedDate === today} onOpen={() => setDetailsOpen(true)} />
@@ -489,29 +490,29 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
       <View style={styles.screen}>
         <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.accent} />} showsVerticalScrollIndicator={false}>
           <View style={styles.topBar}>
-            <Pressable onPress={goToday}><Text style={styles.todayLink}>วันนี้</Text></Pressable>
+            <Touchable onPress={goToday}><Text style={styles.todayLink}>วันนี้</Text></Touchable>
             <View style={styles.topActions}>
-              <Pressable accessibilityLabel="นำเข้าตารางเรียน" onLayout={importScheduleOnLayout} onPress={() => onNavigate('smartlife_scan_schedule')} ref={importScheduleRef} style={styles.circleButton}><MaterialIcon color={C.accent} name="document_scanner" size={20} /></Pressable>
-              <Pressable accessibilityLabel="เพิ่มรายการ" onPress={() => setAddSheetOpen(true)} style={styles.circleButton}><MaterialIcon color={C.accent} name="add" size={24} /></Pressable>
+              <Touchable accessibilityLabel="นำเข้าตารางเรียน" onLayout={importScheduleOnLayout} onPress={() => onNavigate('smartlife_scan_schedule')} ref={importScheduleRef} style={styles.circleButton}><MaterialIcon color={C.accent} name="document_scanner" size={20} /></Touchable>
+              <Touchable accessibilityLabel="เพิ่มรายการ" onPress={() => setAddSheetOpen(true)} style={styles.circleButton}><MaterialIcon color={C.accent} name="add" size={24} /></Touchable>
             </View>
           </View>
           <Text style={styles.largeTitle}>ปฏิทิน</Text>
 
-          {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{([['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as [PlannerTab, string][]).map(([key, label]) => <Pressable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Pressable>)}</View> : null}
+          {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{([['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as [PlannerTab, string][]).map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Touchable>)}</View> : null}
 
           <GoogleCalendarSyncCard onSynced={load} uid={uid} />
           <AiActivityRecommendationCard onNavigate={onNavigate} uid={uid} />
 
           <View accessibilityRole="tablist" style={styles.segment}>{(['day', 'week', 'month', 'year'] as ViewMode[]).map((item) => (
-            <Pressable accessibilityRole="tab" accessibilityState={{selected: mode === item}} key={item} onPress={() => { setMode(item); setVisibleDate(selectedDate); anchorTo(selectedDate); }} style={[styles.segmentItem, mode === item && styles.segmentActive]}>
+            <Touchable accessibilityRole="tab" accessibilityState={{selected: mode === item}} key={item} onPress={() => { setMode(item); setVisibleDate(selectedDate); anchorTo(selectedDate); }} style={[styles.segmentItem, mode === item && styles.segmentActive]}>
               <Text style={[styles.segmentText, mode === item && styles.segmentTextActive]}>{item === 'day' ? 'วัน' : item === 'week' ? 'สัปดาห์' : item === 'month' ? 'เดือน' : 'ปี'}</Text>
-            </Pressable>
+            </Touchable>
           ))}</View>
 
           <View style={styles.periodHeader}>
-            <Pressable accessibilityLabel="ช่วงก่อนหน้า" onPress={() => navigate(-1)} style={styles.chevron}><MaterialIcon color={C.accent} name="chevron_left" size={26} /></Pressable>
+            <Touchable accessibilityLabel="ช่วงก่อนหน้า" onPress={() => navigate(-1)} style={styles.chevron}><MaterialIcon color={C.accent} name="chevron_left" size={26} /></Touchable>
             <Text numberOfLines={1} style={styles.periodTitle}>{periodTitle}</Text>
-            <Pressable accessibilityLabel="ช่วงถัดไป" onPress={() => navigate(1)} style={styles.chevron}><MaterialIcon color={C.accent} name="chevron_right" size={26} /></Pressable>
+            <Touchable accessibilityLabel="ช่วงถัดไป" onPress={() => navigate(1)} style={styles.chevron}><MaterialIcon color={C.accent} name="chevron_right" size={26} /></Touchable>
           </View>
 
           <View style={styles.calendarCard}>
@@ -519,10 +520,10 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
             {loading ? <View style={styles.calendarLoading}><ActivityIndicator color={C.accent} /><Text style={styles.loadingText}>กำลังโหลดปฏิทิน…</Text></View> : null}
           </View>
 
-          {mode !== 'day' ? <View style={styles.agendaSection}><View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>{selectedDate === today ? 'วันนี้' : formatLongDate(selectedDate)}</Text><Text style={styles.sectionSub}>{selectedEvents.length ? `${selectedEvents.length} รายการ` : 'ไม่มีกิจกรรม'}</Text></View><Pressable onPress={() => setDetailsOpen(true)}><Text style={styles.seeAll}>ดูทั้งหมด</Text></Pressable></View><AgendaList completingId={completingId} events={selectedEvents} onComplete={(event) => void completeEvent(event)} onDelete={deleteEvent} onOpen={() => setDetailsOpen(true)} onPostpone={setPostponing} /></View> : null}
+          {mode !== 'day' ? <View style={styles.agendaSection}><View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>{selectedDate === today ? 'วันนี้' : formatLongDate(selectedDate)}</Text><Text style={styles.sectionSub}>{selectedEvents.length ? `${selectedEvents.length} รายการ` : 'ไม่มีกิจกรรม'}</Text></View><Touchable onPress={() => setDetailsOpen(true)}><Text style={styles.seeAll}>ดูทั้งหมด</Text></Touchable></View><AgendaList completingId={completingId} events={selectedEvents} onComplete={(event) => void completeEvent(event)} onDelete={deleteEvent} onOpen={() => setDetailsOpen(true)} onPostpone={setPostponing} /></View> : null}
         </ScrollView>
 
-        <Pressable accessibilityLabel="เพิ่มรายการใหม่" accessibilityRole="button" onLayout={addActivityOnLayout} onPress={() => setAddSheetOpen(true)} ref={addActivityRef} style={({pressed}) => [styles.fab, pressed && styles.fabPressed]}><MaterialIcon color={C.accent} name="add" size={30} /></Pressable>
+        <Touchable accessibilityLabel="เพิ่มรายการใหม่" accessibilityRole="button" onLayout={addActivityOnLayout} onPress={() => setAddSheetOpen(true)} ref={addActivityRef} style={({pressed}) => [styles.fab, pressed && styles.fabPressed]}><MaterialIcon color={C.accent} name="add" size={30} /></Touchable>
         <AddItemSheet onClose={() => setAddSheetOpen(false)} onNavigate={onNavigate} visible={addSheetOpen} />
 
         <UserTabBar active={planner ? 'smartlife_planner' : 'smartlife_calendar_day'} onNavigate={onNavigate} />
@@ -531,9 +532,9 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
           <View style={styles.overlay}>
             <View style={styles.sheet}>
               <View style={styles.handle} />
-              <View style={styles.sheetHead}><View><Text style={styles.sheetTitle}>{formatLongDate(selectedDate)}</Text><Text style={styles.sheetSub}>{selectedEvents.length} รายการ</Text></View><Pressable onPress={() => setDetailsOpen(false)} style={styles.close}><MaterialIcon color={C.secondary} name="close" size={20} /></Pressable></View>
+              <View style={styles.sheetHead}><View><Text style={styles.sheetTitle}>{formatLongDate(selectedDate)}</Text><Text style={styles.sheetSub}>{selectedEvents.length} รายการ</Text></View><Touchable onPress={() => setDetailsOpen(false)} style={styles.close}><MaterialIcon color={C.secondary} name="close" size={20} /></Touchable></View>
               <ScrollView style={styles.sheetScroll}>{selectedEvents.length ? selectedEvents.map((event, index) => <EventRow completing={completingId === event.id} event={event} key={String(event.id ?? index)} onComplete={event.entityType === 'activity' ? () => void completeEvent(event) : undefined} onDelete={() => deleteEvent(event)} onPostpone={event.entityType === 'activity' ? () => setPostponing(event) : undefined} />) : <EmptyAgenda />}</ScrollView>
-              <Pressable onPress={() => { setDetailsOpen(false); onNavigate('smartlife_add_activity'); }} style={styles.sheetAdd}><MaterialIcon color="#fff" name="add" size={20} /><Text style={styles.sheetAddText}>เพิ่มกิจกรรม</Text></Pressable>
+              <Touchable onPress={() => { setDetailsOpen(false); onNavigate('smartlife_add_activity'); }} style={styles.sheetAdd}><MaterialIcon color="#fff" name="add" size={20} /><Text style={styles.sheetAddText}>เพิ่มกิจกรรม</Text></Touchable>
             </View>
           </View>
         </Modal>
@@ -547,11 +548,11 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
                   <Text numberOfLines={1} style={styles.sheetTitle}>เลื่อน {postponing ? eventTitle(postponing) : ''}</Text>
                   <Text style={styles.sheetSub}>{postponing ? `เวลาเดิม ${formatTime(postponing.startAt)} น.` : ''}</Text>
                 </View>
-                <Pressable onPress={() => setPostponing(null)} style={styles.close}><MaterialIcon color={C.secondary} name="close" size={20} /></Pressable>
+                <Touchable onPress={() => setPostponing(null)} style={styles.close}><MaterialIcon color={C.secondary} name="close" size={20} /></Touchable>
               </View>
               <View style={styles.postponeList}>
                 {postponeChoices.map((choice) => (
-                  <Pressable
+                  <Touchable
                     accessibilityRole="button"
                     disabled={postponeBusy}
                     key={choice.label}
@@ -563,7 +564,7 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
                       <Text style={styles.postponeChoiceHint}>{choice.hint} · {formatTime(choice.startAt)} น.</Text>
                     </View>
                     <MaterialIcon color={C.secondary} name="chevron_right" size={20} />
-                  </Pressable>
+                  </Touchable>
                 ))}
                 {postponeChoices.length ? null : <Text style={styles.postponeEmpty}>ช่วงเวลาที่เลือกได้ผ่านไปแล้วทั้งหมด</Text>}
               </View>
@@ -641,9 +642,9 @@ function DayTimeline({date, events, isToday, onOpen}: {date: string; events: Eve
           const start = timelineMinute(event.startAt);
           const duration = Math.max(30, Math.min(24 * 60 - start, Math.round((toDate(event.endAt).getTime() - toDate(event.startAt).getTime()) / 60000)));
           const color = typeof event.color === 'string' ? event.color : event.entityType === 'schedule' ? C.green : C.blue;
-          return <Pressable accessibilityLabel={`${eventTitle(event)} ${formatTime(event.startAt)} ถึง ${formatTime(event.endAt)}`} key={String(event.id ?? index)} onPress={onOpen} style={({pressed}) => [styles.timelineEvent, {backgroundColor: softEventColor(color), borderLeftColor: color, height: Math.max(42, duration / 60 * HOUR_HEIGHT - 3), top: start / 60 * HOUR_HEIGHT + 1}, pressed && styles.pressed]}>
+          return <Touchable accessibilityLabel={`${eventTitle(event)} ${formatTime(event.startAt)} ถึง ${formatTime(event.endAt)}`} key={String(event.id ?? index)} onPress={onOpen} style={({pressed}) => [styles.timelineEvent, {backgroundColor: softEventColor(color), borderLeftColor: color, height: Math.max(42, duration / 60 * HOUR_HEIGHT - 3), top: start / 60 * HOUR_HEIGHT + 1}, pressed && styles.pressed]}>
             <Text numberOfLines={1} style={styles.timelineEventTitle}>{eventTitle(event)}</Text><Text numberOfLines={1} style={styles.timelineEventMeta}>{formatTime(event.startAt)}–{formatTime(event.endAt)}{event.location ? ` · ${String(event.location)}` : ''}</Text>
-          </Pressable>;
+          </Touchable>;
         })}
         {isToday ? <View pointerEvents="none" style={[styles.nowLine, {top: nowMinute / 60 * HOUR_HEIGHT}]}><View style={styles.nowDot} /><Text style={styles.nowLabel}>{formatTime(new Date())}</Text><View style={styles.nowRule} /></View> : null}
       </View>
@@ -656,12 +657,12 @@ function EventRow({completing = false, event, onComplete, onDelete, onPostpone, 
   const priority = priorityInfo(event.priority);
   return (
     <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(160)} layout={LinearTransition.duration(200)}>
-    <Pressable disabled={!onPress} onPress={onPress} style={({pressed}) => [styles.eventRow, pressed && styles.pressed]}>
+    <Touchable disabled={!onPress} onPress={onPress} style={({pressed}) => [styles.eventRow, pressed && styles.pressed]}>
       <View style={[styles.eventColor, {backgroundColor: color}]} />
       <View style={styles.eventTime}><Text style={styles.eventStart}>{formatTime(event.startAt)}</Text><Text style={styles.eventEnd}>{formatTime(event.endAt)}</Text></View>
       <View style={styles.eventCopy}><Text numberOfLines={1} style={styles.eventTitle}>{eventTitle(event)}</Text><View style={styles.eventMetaRow}><Text numberOfLines={1} style={styles.eventMeta}>{textEvent(event.location, textEvent(event.courseCode, textEvent(event.type, 'กิจกรรม')))}</Text>{priority ? <View style={[styles.priorityBadge, {backgroundColor: priority.backgroundColor}]}><Text style={[styles.priorityBadgeText, {color: priority.color}]}>{priority.label}</Text></View> : null}</View></View>
-      <View style={styles.eventActions}>{onPostpone ? <Pressable accessibilityLabel={`เลื่อน ${eventTitle(event)}`} disabled={completing} onPress={(pressEvent) => { pressEvent.stopPropagation(); onPostpone(); }} style={styles.postponeEventButton}><MaterialIcon color={C.secondary} name="schedule" size={15} /><Text style={styles.postponeEventText}>เลื่อน</Text></Pressable> : null}{onComplete ? <Pressable accessibilityLabel={`ทำ ${eventTitle(event)} ให้เสร็จ`} disabled={completing} onPress={(pressEvent) => { pressEvent.stopPropagation(); onComplete(); }} style={styles.completeEventButton}>{completing ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="check" size={16} />}<Text style={styles.completeEventText}>เสร็จ</Text></Pressable> : null}{onDelete ? <Pressable accessibilityLabel={`ลบ ${eventTitle(event)}`} onPress={(pressEvent) => { pressEvent.stopPropagation(); onDelete(); }} style={styles.deleteButton}><MaterialIcon color={C.accent} name="delete_outline" size={20} /></Pressable> : !onComplete ? <MaterialIcon color={C.tertiary} name="chevron_right" size={20} /> : null}</View>
-    </Pressable>
+      <View style={styles.eventActions}>{onPostpone ? <Touchable accessibilityLabel={`เลื่อน ${eventTitle(event)}`} disabled={completing} onPress={(pressEvent) => { pressEvent.stopPropagation(); onPostpone(); }} style={styles.postponeEventButton}><MaterialIcon color={C.secondary} name="schedule" size={15} /><Text style={styles.postponeEventText}>เลื่อน</Text></Touchable> : null}{onComplete ? <Touchable accessibilityLabel={`ทำ ${eventTitle(event)} ให้เสร็จ`} disabled={completing} onPress={(pressEvent) => { pressEvent.stopPropagation(); onComplete(); }} style={styles.completeEventButton}>{completing ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="check" size={16} />}<Text style={styles.completeEventText}>เสร็จ</Text></Touchable> : null}{onDelete ? <Touchable accessibilityLabel={`ลบ ${eventTitle(event)}`} onPress={(pressEvent) => { pressEvent.stopPropagation(); onDelete(); }} style={styles.deleteButton}><MaterialIcon color={C.accent} name="delete_outline" size={20} /></Touchable> : !onComplete ? <MaterialIcon color={C.tertiary} name="chevron_right" size={20} /> : null}</View>
+    </Touchable>
     </Animated.View>
   );
 }

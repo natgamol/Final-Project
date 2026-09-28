@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
   type GestureResponderEvent,
 } from "react-native";
+import { Touchable } from "@/components/touchable";
 import NativeDateTimePicker from "@/components/date-time-picker";
 import { Image } from "expo-image";
 import HtmlDocumentView from "@/components/html-document-view";
@@ -277,13 +278,13 @@ function ScanImageViewer({
       visible={visible}
     >
       <View style={localStyles.zoomOverlay}>
-        <Pressable
+        <Touchable
           accessibilityLabel="ปิดภาพที่สแกน"
           onPress={onClose}
           style={[localStyles.zoomClose, { top: safeAreaInsets.top + 14 }]}
         >
           <MaterialIcon color={C.pine} name="close" size={23} />
-        </Pressable>
+        </Touchable>
         <View
           accessibilityLabel="ภาพที่สแกน แตะสองครั้งเพื่อซูม หรือใช้สองนิ้วขยาย"
           accessible
@@ -336,13 +337,13 @@ function ReceiptHtmlModal({
               สร้างจากข้อมูล OCR ที่ตรวจสอบแล้ว
             </Text>
           </View>
-          <Pressable
+          <Touchable
             accessibilityLabel="ปิดใบเสร็จ"
             onPress={onClose}
             style={localStyles.htmlModalClose}
           >
             <MaterialIcon color={C.pine} name="close" size={22} />
-          </Pressable>
+          </Touchable>
         </View>
         <HtmlDocumentView html={html} />
       </View>
@@ -455,16 +456,16 @@ function ReceiptScanDashboard({
     <UserShell active="smartlife_finance_day" onNavigate={onNavigate}>
       <View style={receiptStyles.page}>
         <View style={receiptStyles.header}>
-          <Pressable
+          <Touchable
             onPress={() => onNavigate("smartlife_finance_day")}
             style={receiptStyles.back}
           >
             <MaterialIcon color={C.pine} name="chevron_left" size={25} />
-          </Pressable>
+          </Touchable>
           <Text style={receiptStyles.title}>
             {ready ? "ผลลัพธ์ใบเสร็จ" : "สแกนใบเสร็จ"}
           </Text>
-          <Pressable
+          <Touchable
             onPress={() => onNavigate("smartlife_ocr_history")}
             style={receiptStyles.history}
           >
@@ -473,7 +474,7 @@ function ReceiptScanDashboard({
               name={ready ? "check_circle" : "bookmark_border"}
               size={20}
             />
-          </Pressable>
+          </Touchable>
         </View>
         {retryScan ? <View style={receiptStyles.batchNotice}>
           <Text style={receiptStyles.batchNoticeText}>
@@ -481,8 +482,8 @@ function ReceiptScanDashboard({
               ? `รูปนี้อ่านไม่สำเร็จ อีก ${pendingCount} รูปยังอยู่ในคิว`
               : "รูปนี้อ่านไม่สำเร็จ และเป็นรูปสุดท้ายแล้ว"}
           </Text>
-          <Pressable accessibilityRole="button" onPress={retryScan} style={receiptStyles.batchAction}><Text style={receiptStyles.batchActionText}>ลองอีกครั้ง</Text></Pressable>
-          {skipScan ? <Pressable accessibilityRole="button" onPress={skipScan} style={receiptStyles.batchAction}><Text style={receiptStyles.batchActionText}>{pendingCount > 0 ? "ข้าม" : "เลิกสแกน"}</Text></Pressable> : null}
+          <Touchable accessibilityRole="button" onPress={retryScan} style={receiptStyles.batchAction}><Text style={receiptStyles.batchActionText}>ลองอีกครั้ง</Text></Touchable>
+          {skipScan ? <Touchable accessibilityRole="button" onPress={skipScan} style={receiptStyles.batchAction}><Text style={receiptStyles.batchActionText}>{pendingCount > 0 ? "ข้าม" : "เลิกสแกน"}</Text></Touchable> : null}
         </View> : null}
         {!ready ? (
           <>
@@ -501,7 +502,7 @@ function ReceiptScanDashboard({
                 และหมวดหมู่ให้ เลือกได้ครั้งละไม่เกิน 10 รูป
               </Text>
             </LinearGradient>
-            <Pressable
+            <Touchable
               onPress={() => pick("library")}
               style={receiptStyles.dropZone}
             >
@@ -515,24 +516,24 @@ function ReceiptScanDashboard({
                   ? "กำลังอ่านใบเสร็จ..."
                   : "วางใบเสร็จให้อยู่ในกรอบ\nแล้วกดถ่ายหรืออัปโหลด"}
               </Text>
-            </Pressable>
+            </Touchable>
             <View style={receiptStyles.pickRow}>
-              <Pressable
+              <Touchable
                 disabled={saving}
                 onPress={() => pick("camera")}
                 style={receiptStyles.pickButton}
               >
                 <MaterialIcon color="#7684ba" name="photo_camera" size={20} />
                 <Text style={receiptStyles.pickText}>ถ่ายใบเสร็จ</Text>
-              </Pressable>
-              <Pressable
+              </Touchable>
+              <Touchable
                 disabled={saving}
                 onPress={() => pick("library")}
                 style={receiptStyles.pickButton}
               >
                 <MaterialIcon color="#7684ba" name="image" size={20} />
                 <Text style={receiptStyles.pickText}>อัปโหลดรูป</Text>
-              </Pressable>
+              </Touchable>
             </View>
           </>
         ) : (
@@ -547,7 +548,7 @@ function ReceiptScanDashboard({
                     not the nine behind it. "ล้างข้อมูล" empties the whole queue,
                     so mid-queue skipping needs its own way out. */}
                 {skipCurrentScan ? (
-                  <Pressable
+                  <Touchable
                     accessibilityHint="ไม่บันทึกใบนี้ แล้วอ่านใบถัดไปในคิว"
                     accessibilityRole="button"
                     disabled={saving}
@@ -555,7 +556,7 @@ function ReceiptScanDashboard({
                     style={[receiptStyles.batchAction, saving && receiptStyles.disabled]}
                   >
                     <Text style={receiptStyles.batchActionText}>ข้ามใบนี้</Text>
-                  </Pressable>
+                  </Touchable>
                 ) : null}
               </View>
             ) : null}
@@ -779,14 +780,14 @@ function ReceiptScanDashboard({
                 value="นำเข้าจาก Smart Scan OCR"
               />
             </View>
-            <Pressable
+            <Touchable
               onPress={() => setReceiptHtmlOpen(true)}
               style={receiptStyles.htmlButton}
             >
               <MaterialIcon color={C.sage} name="language" size={19} />
               <Text style={receiptStyles.htmlButtonText}>ดูใบเสร็จ</Text>
-            </Pressable>
-            <Pressable
+            </Touchable>
+            <Touchable
               disabled={saving}
               onPress={confirmAndSave}
               style={[
@@ -809,7 +810,7 @@ function ReceiptScanDashboard({
                       : "บันทึกรายจ่ายนี้"}
                 </Text>
               </LinearGradient>
-            </Pressable>
+            </Touchable>
             <ReceiptHtmlModal
               html={receiptHtml}
               onClose={() => setReceiptHtmlOpen(false)}
@@ -1810,7 +1811,7 @@ export default function ScanScreen({
           <UserHeader
             onNavigate={onNavigate}
             right={
-              <Pressable
+              <Touchable
                 accessibilityLabel="เปิดประวัติ OCR"
                 accessibilityRole="button"
                 onPress={() => onNavigate("smartlife_ocr_history")}
@@ -1820,7 +1821,7 @@ export default function ScanScreen({
                 ]}
               >
                 <MaterialIcon color="#fff" name="history" size={21} />
-              </Pressable>
+              </Touchable>
             }
             title="Smart Scan"
             subtitle="ถ่ายครั้งเดียว ระบบแยกสลิปและตารางเรียนให้อัตโนมัติ"
@@ -1844,7 +1845,7 @@ export default function ScanScreen({
                 รองรับภาษาไทยและอังกฤษ พร้อมจำแนกประเภทและดึงข้อมูลสำคัญด้วย
                 Cloud Vision OCR
               </Text>
-              <Pressable
+              <Touchable
                 accessibilityLabel="เพิ่มรูปเอกสาร"
                 accessibilityRole="button"
                 onLayout={addDocumentOnLayout}
@@ -1861,7 +1862,7 @@ export default function ScanScreen({
                 >
                   <MaterialIcon color="#fff" name="add" size={34} />
                 </LinearGradient>
-              </Pressable>
+              </Touchable>
               <Text style={localStyles.fabLabel}>แตะเพื่อถ่ายหรืออัปโหลด</Text>
             </LinearGradient>
           </Card>
@@ -1887,15 +1888,15 @@ export default function ScanScreen({
                     ระบบจะไม่บันทึกข้อมูลจนกว่า OCR จะประมวลผลสำเร็จ
                   </Text>
                 </View>
-                <Pressable
+                <Touchable
                   accessibilityLabel="เลือกรูปใหม่"
                   onPress={() => setPickerOpen(true)}
                   style={localStyles.changeButton}
                 >
                   <MaterialIcon color={C.sage} name="refresh" size={18} />
-                </Pressable>
+                </Touchable>
               </View>
-              <Pressable
+              <Touchable
                 accessibilityHint="แตะเพื่อเปิดภาพเต็มจอและซูม"
                 accessibilityLabel="เปิดภาพที่สแกนขนาดใหญ่"
                 onPress={() => setImageViewerOpen(true)}
@@ -1905,14 +1906,14 @@ export default function ScanScreen({
                   source={{ uri: imageUri }}
                   style={[localStyles.preview, { height: previewHeight }]}
                 />
-              </Pressable>
+              </Touchable>
               </Card>
             </View>
           ) : null}
 
           {imageUri || result ? (
             <View style={localStyles.scanActions}>
-              <Pressable
+              <Touchable
                 accessibilityLabel="สแกนใหม่"
                 disabled={saving}
                 onPress={() => setPickerOpen(true)}
@@ -1929,8 +1930,8 @@ export default function ScanScreen({
                 <Text style={localStyles.rescanText}>
                   {"\u0e2a\u0e41\u0e01\u0e19\u0e43\u0e2b\u0e21\u0e48"}
                 </Text>
-              </Pressable>
-              <Pressable
+              </Touchable>
+              <Touchable
                 accessibilityHint="ล้างรูปและข้อมูล OCR ทั้งหมด"
                 accessibilityLabel="ล้างผลสแกน"
                 accessibilityRole="button"
@@ -1947,7 +1948,7 @@ export default function ScanScreen({
                     "\u0e25\u0e49\u0e32\u0e07\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25"
                   }
                 </Text>
-              </Pressable>
+              </Touchable>
             </View>
           ) : null}
 
@@ -2210,7 +2211,7 @@ export default function ScanScreen({
                     onChangeText={(value) => updateDraft("reference", value)}
                     value={textValue(receipt.reference, "")}
                   />
-                  <Pressable
+                  <Touchable
                     accessibilityLabel="ดูใบเสร็จ"
                     onPress={() => setReceiptHtmlOpen(true)}
                     style={({ pressed }) => [
@@ -2222,7 +2223,7 @@ export default function ScanScreen({
                     <Text style={localStyles.receiptHtmlButtonText}>
                       ดูใบเสร็จ
                     </Text>
-                  </Pressable>
+                  </Touchable>
                 </View>
               ) : null}
               {schedule ? (
@@ -2264,7 +2265,7 @@ export default function ScanScreen({
                             value={textValue(entry.courseCode, "")}
                           />
                           <MaterialIcon color={C.sage} name="edit" size={16} />
-                          <Pressable
+                          <Touchable
                             accessibilityLabel={`ลบรายวิชาที่ ${index + 1}`}
                             accessibilityRole="button"
                             onPress={() =>
@@ -2278,7 +2279,7 @@ export default function ScanScreen({
                             style={localStyles.courseDelete}
                           >
                             <MaterialIcon color="#c1766f" name="delete_outline" size={17} />
-                          </Pressable>
+                          </Touchable>
                         </View>
                         {entryProblems.get(index)?.courseCode ? (
                           <Text style={localStyles.entryError}>
@@ -2439,7 +2440,7 @@ export default function ScanScreen({
                   ) : null}
                 </View>
               ) : null}
-              <Pressable
+              <Touchable
                 accessibilityLabel="ดูข้อความ OCR ทั้งหมด"
                 onPress={() => setOcrTextOpen(true)}
                 style={localStyles.rawButton}
@@ -2448,7 +2449,7 @@ export default function ScanScreen({
                 <Text style={localStyles.rawButtonText}>
                   ดูข้อความ OCR ทั้งหมด
                 </Text>
-              </Pressable>
+              </Touchable>
               {schedule ? (
                 <View style={localStyles.semesterCard}>
                   <View style={localStyles.semesterHead}>
@@ -2471,7 +2472,7 @@ export default function ScanScreen({
                   {institutionType === "high-school" ? (
                     <View style={localStyles.termSelector}>
                       {([1, 2] as SchoolTerm[]).map((term) => (
-                        <Pressable
+                        <Touchable
                           key={term}
                           onPress={() => selectSchoolTerm(term)}
                           style={[
@@ -2488,7 +2489,7 @@ export default function ScanScreen({
                           >
                             ภาคเรียนที่ {term}
                           </Text>
-                        </Pressable>
+                        </Touchable>
                       ))}
                     </View>
                   ) : null}
@@ -2537,7 +2538,7 @@ export default function ScanScreen({
               ) : null}
               {/* A general document has no receipt or schedule to commit, but
                   it still saves -- as a note holding the extracted text. */}
-              <Pressable
+              <Touchable
                 accessibilityLabel="บันทึกข้อมูล"
                 accessibilityRole="button"
                 accessibilityState={{ disabled: saving }}
@@ -2579,7 +2580,7 @@ export default function ScanScreen({
                           : "\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25"}
                   </Text>
                 </LinearGradient>
-              </Pressable>
+              </Touchable>
               <Text style={localStyles.saveHint}>
                 {result.scanType === "document"
                   ? "เก็บข้อความที่อ่านได้ไว้เป็นโน้ตใหม่ แก้ไขต่อได้ในหน้าโน้ต"
@@ -2630,12 +2631,12 @@ export default function ScanScreen({
                     onPress={() => pick("library")}
                   />
                 </View>
-                <Pressable
+                <Touchable
                   onPress={() => setPickerOpen(false)}
                   style={localStyles.cancel}
                 >
                   <Text style={localStyles.cancelText}>ยกเลิก</Text>
-                </Pressable>
+                </Touchable>
               </View>
             </Pressable>
           </Modal>
@@ -2656,7 +2657,7 @@ export default function ScanScreen({
               result.scanType === "receipt" && localStyles.pinnedReceiptLayer,
             ]}
           >
-            <Pressable
+            <Touchable
               accessibilityHint="แตะเพื่อเปิดภาพเต็มจอและซูม"
               accessibilityLabel="เปิดภาพที่สแกนขนาดใหญ่"
               onPress={() => setImageViewerOpen(true)}
@@ -2670,7 +2671,7 @@ export default function ScanScreen({
                   { height: pinnedPreviewHeight },
                 ]}
               />
-            </Pressable>
+            </Touchable>
           </View>
         ) : null}
         <ScanImageViewer
@@ -2764,7 +2765,7 @@ function PickerDataRow({
   value: string;
 }) {
   return (
-    <Pressable
+    <Touchable
       accessibilityLabel={`${decodeUnicodeEscapes(label)} ${decodeUnicodeEscapes(value)}`}
       accessibilityRole="button"
       onPress={onPress}
@@ -2781,7 +2782,7 @@ function PickerDataRow({
         <Text style={localStyles.dataValue}>{value}</Text>
       </View>
       <MaterialIcon color={C.sage} name="expand_more" size={18} />
-    </Pressable>
+    </Touchable>
   );
 }
 
@@ -2825,7 +2826,7 @@ function TimePickerButton({
   const visibleLabel = decodeUnicodeEscapes(label);
   const visibleValue = decodeUnicodeEscapes(value) || "แตะเพื่อเลือกเวลา";
   return (
-    <Pressable
+    <Touchable
       accessibilityLabel={`${visibleLabel} ${visibleValue}`}
       accessibilityRole="button"
       onPress={onPress}
@@ -2840,7 +2841,7 @@ function TimePickerButton({
         <Text style={localStyles.timePickerText}>{visibleValue}</Text>
         <MaterialIcon color={C.muted} name="expand_more" size={16} />
       </View>
-    </Pressable>
+    </Touchable>
   );
 }
 function SemesterDateButton({
@@ -2855,7 +2856,7 @@ function SemesterDateButton({
   const visibleLabel = decodeUnicodeEscapes(label);
   const visibleValue = decodeUnicodeEscapes(value);
   return (
-    <Pressable
+    <Touchable
       accessibilityLabel={`${visibleLabel} ${visibleValue}`}
       accessibilityRole="button"
       onPress={onPress}
@@ -2869,7 +2870,7 @@ function SemesterDateButton({
         <MaterialIcon color={C.sage} name="calendar_month" size={16} />
         <Text style={localStyles.semesterDateText}>{visibleValue}</Text>
       </View>
-    </Pressable>
+    </Touchable>
   );
 }
 function SourceButton({
@@ -2882,7 +2883,7 @@ function SourceButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <Touchable
       accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => [
@@ -2894,7 +2895,7 @@ function SourceButton({
         <MaterialIcon color={C.sage} name={icon} size={27} />
       </View>
       <Text style={localStyles.sourceLabel}>{label}</Text>
-    </Pressable>
+    </Touchable>
   );
 }
 
@@ -2938,7 +2939,7 @@ function DocumentTextBox({
         {edited ? "ข้อความที่แก้ไขแล้ว" : "ข้อความที่อ่านได้"}
       </Text>
       {edited ? (
-        <Pressable
+        <Touchable
           accessibilityLabel="คืนค่าข้อความที่สแกน"
           accessibilityRole="button"
           onPress={() => onChange(original)}
@@ -2946,9 +2947,9 @@ function DocumentTextBox({
         >
           <MaterialIcon color="#5f875f" name="undo" size={15} />
           <Text style={localStyles.documentActionText}>คืนค่าเดิม</Text>
-        </Pressable>
+        </Touchable>
       ) : null}
-      <Pressable
+      <Touchable
         accessibilityLabel={editing ? "แก้ไขข้อความเสร็จแล้ว" : "แก้ไขข้อความที่สแกน"}
         accessibilityRole="button"
         onPress={() => setEditing((current) => !current)}
@@ -2956,7 +2957,7 @@ function DocumentTextBox({
       >
         <MaterialIcon color="#5f875f" name={editing ? "check" : "edit"} size={15} />
         <Text style={localStyles.documentActionText}>{editing ? "เสร็จ" : "แก้ไข"}</Text>
-      </Pressable>
+      </Touchable>
     </View>
   );
 
@@ -3007,7 +3008,7 @@ function DocumentTextBox({
         </Text>
       </ScrollView>
       {isLong ? (
-        <Pressable
+        <Touchable
           accessibilityLabel={expanded ? "ย่อข้อความที่สแกน" : "ดูข้อความที่สแกนทั้งหมด"}
           accessibilityRole="button"
           onPress={() => setExpanded((current) => !current)}
@@ -3023,7 +3024,7 @@ function DocumentTextBox({
               ? "ย่อข้อความ"
               : `ดูทั้งหมด (${trimmed.length.toLocaleString("th-TH")} ตัวอักษร)`}
           </Text>
-        </Pressable>
+        </Touchable>
       ) : null}
     </View>
   );
@@ -3061,9 +3062,9 @@ function OcrTextModal({
                 {trimmed ? `${trimmed.length.toLocaleString("th-TH")} ตัวอักษร` : "ไม่พบข้อความในภาพนี้"}
               </Text>
             </View>
-            <Pressable accessibilityLabel="ปิด" onPress={onClose} style={localStyles.ocrClose}>
+            <Touchable accessibilityLabel="ปิด" onPress={onClose} style={localStyles.ocrClose}>
               <MaterialIcon color={C.pine} name="close" size={22} />
-            </Pressable>
+            </Touchable>
           </View>
           <ScrollView style={localStyles.ocrScroll}>
             <Text selectable style={localStyles.ocrBody}>
@@ -3140,7 +3141,7 @@ function DayPickerRow({
         {SCAN_WEEKDAYS.map((weekday) => {
           const active = weekday === current;
           return (
-            <Pressable
+            <Touchable
               accessibilityLabel={`ตั้งวัน ${weekday}`}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
@@ -3155,7 +3156,7 @@ function DayPickerRow({
               <Text style={[localStyles.dayChipText, active && localStyles.dayChipTextActive]}>
                 {weekday}
               </Text>
-            </Pressable>
+            </Touchable>
           );
         })}
       </View>
@@ -3190,7 +3191,7 @@ function DocumentTypePicker({
         {DOCUMENT_TYPES.map((option) => {
           const active = option.value === current;
           return (
-            <Pressable
+            <Touchable
               accessibilityLabel={`ตั้งเป็น ${option.label}`}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
@@ -3202,7 +3203,7 @@ function DocumentTypePicker({
               <Text style={[localStyles.typeChipText, active && localStyles.typeChipTextActive]}>
                 {option.label}
               </Text>
-            </Pressable>
+            </Touchable>
           );
         })}
       </View>
@@ -3229,7 +3230,7 @@ function CategoryPickerRow({
   const current = normalizeExpenseCategory(value);
   return (
     <View style={localStyles.categoryRow}>
-      <Pressable
+      <Touchable
         accessibilityLabel={`เลือกหมวดหมู่ ปัจจุบัน ${current}`}
         accessibilityRole="button"
         onPress={() => setOpen((previous) => !previous)}
@@ -3243,13 +3244,13 @@ function CategoryPickerRow({
           <Text style={localStyles.categoryValue}>{current}</Text>
         </View>
         <MaterialIcon color={C.muted} name={open ? "expand_less" : "expand_more"} size={20} />
-      </Pressable>
+      </Touchable>
       {open ? (
         <View style={localStyles.categoryOptions}>
           {EXPENSE_CATEGORIES.map((entry) => {
             const active = entry.label === current;
             return (
-              <Pressable
+              <Touchable
                 accessibilityLabel={`ตั้งหมวดหมู่ ${entry.label}`}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
@@ -3264,7 +3265,7 @@ function CategoryPickerRow({
                 <Text style={[localStyles.categoryOptionText, active && localStyles.categoryOptionTextActive]}>
                   {entry.label}
                 </Text>
-              </Pressable>
+              </Touchable>
             );
           })}
         </View>

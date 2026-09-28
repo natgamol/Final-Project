@@ -1,5 +1,6 @@
 import {useEffect} from 'react';
-import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native';
+import {StyleSheet, Text, useWindowDimensions, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Animated, {Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming} from 'react-native-reanimated';
 
@@ -89,9 +90,9 @@ export default function TourOverlay() {
         <View style={styles.handle} />
         <View style={styles.headerRow}>
           <Text style={styles.title}>{step.title}</Text>
-          <Pressable accessibilityLabel="ข้ามคำแนะนำ" hitSlop={8} onPress={skip}>
+          <Touchable accessibilityLabel="ข้ามคำแนะนำ" hitSlop={8} onPress={skip}>
             <Text style={styles.skip}>ข้าม</Text>
-          </Pressable>
+          </Touchable>
         </View>
         <Text style={styles.description}>{step.description}</Text>
         <View style={styles.footerRow}>
@@ -100,9 +101,9 @@ export default function TourOverlay() {
               <View key={entry.id} style={[styles.dot, index === stepIndex && styles.dotActive]} />
             ))}
           </View>
-          <Pressable accessibilityLabel={isLast ? 'เข้าใจแล้ว' : 'ถัดไป'} onPress={next} style={({pressed}) => [styles.nextButton, pressed && styles.nextButtonPressed]}>
+          <Touchable accessibilityLabel={isLast ? 'เข้าใจแล้ว' : 'ถัดไป'} onPress={next} style={({pressed}) => [styles.nextButton, pressed && styles.nextButtonPressed]}>
             <Text style={styles.nextText}>{isLast ? 'เข้าใจแล้ว' : 'ถัดไป'}</Text>
-          </Pressable>
+          </Touchable>
         </View>
       </Animated.View>
     </View>

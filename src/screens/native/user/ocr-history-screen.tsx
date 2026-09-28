@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, FlatList, Modal, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import LoadingAndSuccessModal, {type FeedbackPhase} from '@/components/loading-success-modal';
@@ -95,7 +96,7 @@ export default function OcrHistoryScreen({uid, onNavigate}: {uid: string; onNavi
   };
 
   return <UserShell active="smartlife_scan_schedule" onNavigate={onNavigate} scroll={false}>
-    <UserHeader onNavigate={onNavigate} right={<Pressable accessibilityLabel="เปิด Smart Scan" onPress={() => onNavigate('smartlife_scan_schedule')} style={styles.headerAction}><MaterialIcon color="#fff" name="document_scanner" size={21} /></Pressable>} subtitle="รายการสแกนจริงจาก Firebase" title="ประวัติ OCR" />
+    <UserHeader onNavigate={onNavigate} right={<Touchable accessibilityLabel="เปิด Smart Scan" onPress={() => onNavigate('smartlife_scan_schedule')} style={styles.headerAction}><MaterialIcon color="#fff" name="document_scanner" size={21} /></Touchable>} subtitle="รายการสแกนจริงจาก Firebase" title="ประวัติ OCR" />
     <FlatList
       contentContainerStyle={[styles.list, !filteredItems.length && styles.listEmpty]}
       data={filteredItems}
@@ -108,7 +109,7 @@ export default function OcrHistoryScreen({uid, onNavigate}: {uid: string; onNavi
           <View style={styles.summaryMini}><Text style={styles.summaryMiniValue}>{scheduleCount}</Text><Text style={styles.summaryMiniLabel}>ตารางเรียน</Text></View>
           <View style={styles.summaryMini}><Text style={styles.summaryMiniValue}>{receiptCount}</Text><Text style={styles.summaryMiniLabel}>การเงิน</Text></View>
         </LinearGradient>
-        <View style={styles.filters}>{([['all', 'ทั้งหมด'], ['schedule', 'ตารางเรียน'], ['receipt', 'การเงิน']] as [Filter, string][]).map(([value, label]) => <Pressable key={value} onPress={() => setFilter(value)} style={[styles.filter, filter === value && styles.filterActive]}><Text style={[styles.filterText, filter === value && styles.filterTextActive]}>{label}</Text></Pressable>)}</View>
+        <View style={styles.filters}>{([['all', 'ทั้งหมด'], ['schedule', 'ตารางเรียน'], ['receipt', 'การเงิน']] as [Filter, string][]).map(([value, label]) => <Touchable key={value} onPress={() => setFilter(value)} style={[styles.filter, filter === value && styles.filterActive]}><Text style={[styles.filterText, filter === value && styles.filterTextActive]}>{label}</Text></Touchable>)}</View>
         <View style={styles.listTitleRow}><Text style={styles.listTitle}>รายการล่าสุด</Text><Text style={styles.listCount}>{filteredItems.length} รายการ</Text></View>
       </View>}
       renderItem={({item}) => <HistoryItem item={item} onDelete={() => setDeleteTarget(item)} />}
@@ -122,8 +123,8 @@ export default function OcrHistoryScreen({uid, onNavigate}: {uid: string; onNavi
           <Text style={styles.confirmTitle}>ลบประวัตินี้หรือไม่?</Text>
           <Text style={styles.confirmText}>รายการจะถูกลบออกจากประวัติ OCR อย่างถาวร แต่ข้อมูลการเงินหรือตารางเรียนที่เคยบันทึกไว้จะยังอยู่</Text>
           <View style={styles.confirmActions}>
-            <Pressable onPress={() => setDeleteTarget(null)} style={styles.cancelButton}><Text style={styles.cancelText}>ยกเลิก</Text></Pressable>
-            <Pressable onPress={confirmDelete} style={styles.deleteButton}><LinearGradient colors={['#c47c7b', '#a95758']} style={styles.deleteGradient}><MaterialIcon color="#fff" name="delete" size={18} /><Text style={styles.deleteText}>ลบถาวร</Text></LinearGradient></Pressable>
+            <Touchable onPress={() => setDeleteTarget(null)} style={styles.cancelButton}><Text style={styles.cancelText}>ยกเลิก</Text></Touchable>
+            <Touchable onPress={confirmDelete} style={styles.deleteButton}><LinearGradient colors={['#c47c7b', '#a95758']} style={styles.deleteGradient}><MaterialIcon color="#fff" name="delete" size={18} /><Text style={styles.deleteText}>ลบถาวร</Text></LinearGradient></Touchable>
           </View>
         </View>
       </Pressable>
@@ -143,7 +144,7 @@ function HistoryItem({item, onDelete}: {item: WithId<ScanLog>; onDelete: () => v
       <Text numberOfLines={2} style={styles.itemSummary}>{scanSummary(item)}</Text>
       <View style={styles.itemMeta}><MaterialIcon color={C.muted} name="schedule" size={13} /><Text style={styles.itemDate}>{scanDate(item.createdAt)}</Text></View>
     </View>
-    <Pressable accessibilityLabel={`ลบประวัติ${receipt ? 'การเงิน' : 'ตารางเรียน'}`} accessibilityRole="button" onPress={onDelete} style={({pressed}) => [styles.trash, pressed && styles.pressed]}><MaterialIcon color="#b56869" name="delete_outline" size={20} /></Pressable>
+    <Touchable accessibilityLabel={`ลบประวัติ${receipt ? 'การเงิน' : 'ตารางเรียน'}`} accessibilityRole="button" onPress={onDelete} style={({pressed}) => [styles.trash, pressed && styles.pressed]}><MaterialIcon color="#b56869" name="delete_outline" size={20} /></Touchable>
   </View>;
 }
 

@@ -1,5 +1,6 @@
 import {useCallback, useState} from 'react';
-import {ActivityIndicator, Pressable, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {MaterialIcon} from '@/screens/native/user/user-ui';
 import {AdminCard, C, Empty, KindBadge, Pill, Row, SectionHead, SmallButton, date, items, styles as ui, text} from '../admin-ui';
@@ -58,9 +59,9 @@ export default function AdminAnnouncementsView({actionLoading, data, onAction}: 
             <Text style={ui.sectionMeta}>ส่งถึงผู้ใช้ทุกคนผ่าน Firebase</Text>
           </View>
           {editingId ? (
-            <Pressable accessibilityLabel="ยกเลิกการแก้ไข" onPress={reset}>
+            <Touchable accessibilityLabel="ยกเลิกการแก้ไข" onPress={reset}>
               <MaterialIcon color={C.red} name="close" size={20} />
-            </Pressable>
+            </Touchable>
           ) : null}
         </View>
 
@@ -99,10 +100,10 @@ export default function AdminAnnouncementsView({actionLoading, data, onAction}: 
           <Text style={ui.audienceText}>ผู้รับ: ผู้ใช้ทุกคน</Text>
         </View>
 
-        <Pressable disabled={publishing} onPress={publish} style={({pressed}) => [ui.publishButton, (pressed || publishing) && ui.pressed]}>
+        <Touchable disabled={publishing} onPress={publish} style={({pressed}) => [ui.publishButton, (pressed || publishing) && ui.pressed]}>
           {publishing ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="send" size={18} />}
           <Text style={ui.publishText}>{publishing ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'สร้างประกาศถึงทุกคน'}</Text>
-        </Pressable>
+        </Touchable>
       </AdminCard>
 
       <AdminCard>

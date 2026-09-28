@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import Animated, {FadeInDown, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withSpring} from 'react-native-reanimated';
 import {Timestamp} from 'firebase/firestore';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
@@ -97,10 +98,10 @@ export default function NotesScreen({onNavigate, page, planner, uid}: Props) {
   return <ResponsiveSafeArea style={styles.safe}><View style={styles.screen}><UserGradientBackdrop />
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.sage} />} showsVerticalScrollIndicator={false}>
       {/* Refactored UI: compact notes dashboard with category-aware counts and list. */}
-      <View style={styles.header}><View><Text style={styles.eyebrow}>บันทึกของฉัน</Text><Text style={styles.title}>โน้ต</Text></View><Pressable accessibilityLabel="เพิ่มโน้ต" onPress={() => onNavigate('smartlife_add_note')} style={styles.add}><MaterialIcon color={C.ink} name="add" size={26} /></Pressable></View>
-      <View style={styles.focusCard}><View style={styles.focusAccent} /><Text style={styles.focusTitle}>โฟกัสวันนี้</Text>{focusNotes.length ? focusNotes.map((note, index) => <Pressable accessibilityLabel={`เปิดโน้ต ${str(note, 'title')}`} key={str(note, 'id', String(index))} onPress={() => openNote(note)} style={styles.focusRow}><View style={styles.focusCheck}><MaterialIcon color="#fff" name="description" size={13} /></View><View style={{flex: 1}}><Text numberOfLines={1} style={styles.focusNoteTitle}>{str(note, 'title')}</Text><Text numberOfLines={1} style={styles.focusNoteSub}>{str(note, 'content', 'เตรียมอ่านและทบทวนเนื้อหา')}</Text></View><CompleteButton busy={completingId === str(note, 'id', '')} onPress={() => void markComplete(note)} /></Pressable>) : <View style={styles.focusEmpty}><MaterialIcon color={C.sage} name="task_alt" size={22} /><Text style={styles.focusNoteTitle}>ไม่มีโน้ตที่ค้างอยู่</Text></View>}</View>
+      <View style={styles.header}><View><Text style={styles.eyebrow}>บันทึกของฉัน</Text><Text style={styles.title}>โน้ต</Text></View><Touchable accessibilityLabel="เพิ่มโน้ต" onPress={() => onNavigate('smartlife_add_note')} style={styles.add}><MaterialIcon color={C.ink} name="add" size={26} /></Touchable></View>
+      <View style={styles.focusCard}><View style={styles.focusAccent} /><Text style={styles.focusTitle}>โฟกัสวันนี้</Text>{focusNotes.length ? focusNotes.map((note, index) => <Touchable accessibilityLabel={`เปิดโน้ต ${str(note, 'title')}`} key={str(note, 'id', String(index))} onPress={() => openNote(note)} style={styles.focusRow}><View style={styles.focusCheck}><MaterialIcon color="#fff" name="description" size={13} /></View><View style={{flex: 1}}><Text numberOfLines={1} style={styles.focusNoteTitle}>{str(note, 'title')}</Text><Text numberOfLines={1} style={styles.focusNoteSub}>{str(note, 'content', 'เตรียมอ่านและทบทวนเนื้อหา')}</Text></View><CompleteButton busy={completingId === str(note, 'id', '')} onPress={() => void markComplete(note)} /></Touchable>) : <View style={styles.focusEmpty}><MaterialIcon color={C.sage} name="task_alt" size={22} /><Text style={styles.focusNoteTitle}>ไม่มีโน้ตที่ค้างอยู่</Text></View>}</View>
       <View style={styles.aiRecommendation}><AiActivityRecommendationCard onNavigate={onNavigate} uid={uid} /></View>
-      {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{([['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as [PlannerTab, string][]).map(([key, label]) => <Pressable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Pressable>)}</View> : null}
+      {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{([['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as [PlannerTab, string][]).map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Touchable>)}</View> : null}
       <View style={styles.searchRow}>
         <MaterialIcon color="#8b948a" name="search" size={18} />
         <TextInput
@@ -111,22 +112,22 @@ export default function NotesScreen({onNavigate, page, planner, uid}: Props) {
           style={styles.searchInput}
           value={search}
         />
-        {search ? <Pressable accessibilityLabel="ล้างคำค้นหา" onPress={() => { setSearch(''); }}><MaterialIcon color="#8b948a" name="close" size={18} /></Pressable> : null}
+        {search ? <Touchable accessibilityLabel="ล้างคำค้นหา" onPress={() => { setSearch(''); }}><MaterialIcon color="#8b948a" name="close" size={18} /></Touchable> : null}
       </View>
       {folders.length ? <View style={styles.folderRow}>
-        <Pressable accessibilityLabel="โฟลเดอร์ทั้งหมด" onPress={() => { setFolderId(''); }} style={[styles.folderChip, !folderId && styles.folderChipActive]}>
+        <Touchable accessibilityLabel="โฟลเดอร์ทั้งหมด" onPress={() => { setFolderId(''); }} style={[styles.folderChip, !folderId && styles.folderChipActive]}>
           <Text style={[styles.folderChipText, !folderId && styles.folderChipTextActive]}>ทุกโฟลเดอร์</Text>
-        </Pressable>
+        </Touchable>
         {folders.map((folder) => (
-          <Pressable accessibilityLabel={`กรองโฟลเดอร์ ${folder.name}`} key={folder.id} onPress={() => { setFolderId(folder.id === folderId ? '' : folder.id); }} style={[styles.folderChip, folderId === folder.id && styles.folderChipActive]}>
+          <Touchable accessibilityLabel={`กรองโฟลเดอร์ ${folder.name}`} key={folder.id} onPress={() => { setFolderId(folder.id === folderId ? '' : folder.id); }} style={[styles.folderChip, folderId === folder.id && styles.folderChipActive]}>
             <MaterialIcon color={folderId === folder.id ? '#fff' : '#6d786c'} name="folder" size={14} />
             <Text style={[styles.folderChipText, folderId === folder.id && styles.folderChipTextActive]}>{folder.name}</Text>
-          </Pressable>
+          </Touchable>
         ))}
       </View> : null}
-      <View style={styles.tabs}>{tabs.map((tab) => <Pressable key={tab.page} onPress={() => { if (planner) setPlannerFilter(tab.value); else onNavigate(tab.page); }} style={[styles.tab, active.page === tab.page && styles.tabActive]}><Text style={[styles.tabText, active.page === tab.page && styles.tabTextActive]}>{tab.label}</Text></Pressable>)}</View>
+      <View style={styles.tabs}>{tabs.map((tab) => <Touchable key={tab.page} onPress={() => { if (planner) setPlannerFilter(tab.value); else onNavigate(tab.page); }} style={[styles.tab, active.page === tab.page && styles.tabActive]}><Text style={[styles.tabText, active.page === tab.page && styles.tabTextActive]}>{tab.label}</Text></Touchable>)}</View>
       <View style={styles.metrics}><Metric label={active.value === 'all' ? 'กำลังทำ' : `โน้ต${active.label}`} value={notes.length} /><Metric color={C.pink} label="เสร็จแล้ว" value={completeCount} /><Metric label="ปักหมุด" value={importantCount} /></View>
-      <View style={styles.sectionHead}><Text style={styles.sectionTitle}>{active.value === 'all' ? 'โน้ตล่าสุด' : `โน้ต${active.label}`}</Text><Pressable onPress={() => { if (planner) setPlannerFilter('all'); else onNavigate('smartlife_notes'); }}><Text style={styles.allLink}>ดูทั้งหมด</Text></Pressable></View>
+      <View style={styles.sectionHead}><Text style={styles.sectionTitle}>{active.value === 'all' ? 'โน้ตล่าสุด' : `โน้ต${active.label}`}</Text><Touchable onPress={() => { if (planner) setPlannerFilter('all'); else onNavigate('smartlife_notes'); }}><Text style={styles.allLink}>ดูทั้งหมด</Text></Touchable></View>
       {!data ? <View style={styles.loading}><ActivityIndicator color={C.sage} size="large" /><Text style={styles.loadingText}>กำลังโหลดโน้ตจาก Firebase</Text></View> : <Animated.View layout={LinearTransition.duration(200)} style={styles.noteList}>{notes.length ? notes.map((note, index) => <NoteRow busy={completingId === str(note, 'id', '')} category={categoryOf(note, active.value)} index={index} item={note} key={str(note, 'id', String(index))} onComplete={() => void markComplete(note)} onOpen={() => openNote(note)} />) : <View style={styles.empty}><MaterialIcon color="#9aa59a" name={search || folderId ? 'search_off' : 'task_alt'} size={34} /><Text style={styles.emptyText}>{search || folderId ? 'ไม่พบโน้ตที่ตรงกับที่ค้นหา' : 'ไม่มีโน้ตที่ค้างอยู่ในหมวดนี้'}</Text></View>}</Animated.View>}
     </ScrollView><UserTabBar active={planner ? 'smartlife_planner' : 'smartlife_notes'} onNavigate={onNavigate} />
   </View></ResponsiveSafeArea>;
@@ -144,12 +145,12 @@ function CompleteButton({busy, onPress}: {busy: boolean; onPress: () => void}) {
     onPress();
   };
   return (
-    <Pressable accessibilityLabel="ทำเครื่องหมายว่าเสร็จ" disabled={busy} onPress={handlePress} style={({pressed}) => [styles.completeButton, pressed && styles.pressed, busy && {opacity: .55}]}>
+    <Touchable accessibilityLabel="ทำเครื่องหมายว่าเสร็จ" disabled={busy} onPress={handlePress} style={({pressed}) => [styles.completeButton, pressed && styles.pressed, busy && {opacity: .55}]}>
       <Animated.View style={[{alignItems: 'center', flexDirection: 'row', gap: 3}, animStyle]}>
         {busy ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="check" size={16} />}
         <Text style={styles.completeText}>เสร็จ</Text>
       </Animated.View>
-    </Pressable>
+    </Touchable>
   );
 }
 
@@ -158,14 +159,14 @@ function NoteRow({busy, category, index, item, onComplete, onOpen}: {busy: boole
   const title = str(item, 'title');
   return (
     <Animated.View entering={FadeInDown.delay(Math.min(index * 45, 180)).duration(220)} exiting={FadeOut.duration(160)} layout={LinearTransition.duration(200)} style={styles.noteRow}>
-      <Pressable accessibilityLabel={`เปิดโน้ต ${title}`} accessibilityRole="button" onPress={onOpen} style={({pressed}) => [styles.noteOpenArea, pressed && styles.pressed]}>
+      <Touchable accessibilityLabel={`เปิดโน้ต ${title}`} accessibilityRole="button" onPress={onOpen} style={({pressed}) => [styles.noteOpenArea, pressed && styles.pressed]}>
         <View style={[styles.noteIcon, {backgroundColor: theme.bg}]}><MaterialIcon color={theme.color} name={theme.icon} size={19} /></View>
         <View style={{flex: 1}}>
           <View style={styles.noteTitleRow}>{item.pinned === true ? <MaterialIcon color="#c49497" name="push_pin" size={13} /> : null}{item.locked === true ? <MaterialIcon color="#8b948a" name="lock" size={13} /> : null}<Text numberOfLines={1} style={styles.noteTitle}>{title}</Text></View>
           <Text numberOfLines={1} style={styles.noteSub}>{str(item, 'content', `อัปเดต ${date(item.updatedAt ?? item.createdAt)}`)}</Text>
           <Text style={styles.noteCategory}>{theme.label}</Text>
         </View>
-      </Pressable>
+      </Touchable>
       <CompleteButton busy={busy} onPress={onComplete} />
     </Animated.View>
   );

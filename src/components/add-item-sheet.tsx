@@ -1,4 +1,5 @@
 import {Modal, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 // Not imported from `user-ui.tsx` on purpose: that file will import
 // `AddItemSheet` from here, and a value-level circular import between the
@@ -43,14 +44,14 @@ export function AddItemSheet({visible, onClose, onNavigate}: {visible: boolean; 
           <Text style={styles.sheetTitle}>เพิ่มรายการใหม่</Text>
           <Text style={styles.sheetSubtitle}>เลือกสิ่งที่คุณต้องการบันทึก</Text>
           {ADD_ITEM_OPTIONS.map((option) => (
-            <Pressable key={option.page} onPress={() => open(option.page)} style={({pressed}) => [styles.sheetOption, pressed && styles.pressed]}>
+            <Touchable key={option.page} onPress={() => open(option.page)} style={({pressed}) => [styles.sheetOption, pressed && styles.pressed]}>
               <View style={[styles.sheetIcon, {backgroundColor: option.bg}]}><Icon color={option.iconColor} name={option.icon} size={22} /></View>
               <View style={styles.sheetCopy}>
                 <Text style={styles.sheetOptionTitle}>{option.title}</Text>
                 <Text style={styles.sheetOptionSub}>{option.subtitle}</Text>
               </View>
               <Icon color="#8b988b" name="chevron_right" size={22} />
-            </Pressable>
+            </Touchable>
           ))}
         </View>
       </Pressable>

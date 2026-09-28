@@ -1,5 +1,6 @@
 import {useMemo, useState} from 'react';
-import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {StyleSheet, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {filterUsers, sortUsers, type AdminUserInput} from '@/admin/analytics';
 import {MaterialIcon} from '@/screens/native/user/user-ui';
@@ -50,9 +51,9 @@ export default function AdminUsersView({actionLoading, data, onAction, onNavigat
           value={query}
         />
         {query ? (
-          <Pressable accessibilityLabel="ล้างคำค้นหา" onPress={() => setQuery('')}>
+          <Touchable accessibilityLabel="ล้างคำค้นหา" onPress={() => setQuery('')}>
             <MaterialIcon color={C.muted} name="close" size={18} />
-          </Pressable>
+          </Touchable>
         ) : null}
       </View>
 
@@ -109,10 +110,10 @@ export default function AdminUsersView({actionLoading, data, onAction, onNavigat
       })}
 
       {filtered.length > shown.length ? (
-        <Pressable onPress={() => setVisible((current) => current + PAGE_SIZE)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
+        <Touchable onPress={() => setVisible((current) => current + PAGE_SIZE)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
           <MaterialIcon color={C.pine} name="expand_more" size={16} />
           <Text style={ui.refreshButtonText}>ดูเพิ่มอีก {Math.min(PAGE_SIZE, filtered.length - shown.length)} คน</Text>
-        </Pressable>
+        </Touchable>
       ) : null}
 
       <Text style={local.footnote}>

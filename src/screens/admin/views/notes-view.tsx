@@ -1,5 +1,6 @@
 import {useCallback, useMemo, useState} from 'react';
-import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
+import {StyleSheet, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {summarizeNotes, type AdminNoteInput} from '@/admin/analytics';
@@ -152,9 +153,9 @@ export default function AdminNotesView() {
                     value={query}
                   />
                   {query ? (
-                    <Pressable accessibilityLabel="ล้างคำค้นหา" onPress={() => setQuery('')}>
+                    <Touchable accessibilityLabel="ล้างคำค้นหา" onPress={() => setQuery('')}>
                       <MaterialIcon color={C.muted} name="close" size={18} />
-                    </Pressable>
+                    </Touchable>
                   ) : null}
                 </View>
 
@@ -175,10 +176,10 @@ export default function AdminNotesView() {
                 {shown.map((note) => <NoteRow key={note.id} note={note} />)}
 
                 {filtered.length > shown.length ? (
-                  <Pressable onPress={() => setVisible((current) => current + PAGE_SIZE)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
+                  <Touchable onPress={() => setVisible((current) => current + PAGE_SIZE)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
                     <MaterialIcon color={C.pine} name="expand_more" size={16} />
                     <Text style={ui.refreshButtonText}>ดูเพิ่มอีก {Math.min(PAGE_SIZE, filtered.length - shown.length)} รายการ</Text>
-                  </Pressable>
+                  </Touchable>
                 ) : null}
 
                 <View style={{marginTop: 12}}>
@@ -201,7 +202,7 @@ function NoteRow({note}: {note: AdminNoteInput}) {
   const done = (note.status ?? '').toLowerCase() === 'completed';
 
   return (
-    <Pressable onPress={() => setExpanded((value) => !value)} style={({pressed}) => [local.noteRow, pressed && ui.pressed]}>
+    <Touchable onPress={() => setExpanded((value) => !value)} style={({pressed}) => [local.noteRow, pressed && ui.pressed]}>
       <View style={[local.noteStripe, {backgroundColor: color}]} />
       <View style={{flex: 1}}>
         <Text numberOfLines={1} style={local.noteTitle}>{note.title}</Text>
@@ -220,7 +221,7 @@ function NoteRow({note}: {note: AdminNoteInput}) {
         <Text style={local.noteMeta}>แก้ไขล่าสุด {dateTimeFromMillis(note.updatedAtMs)}</Text>
       </View>
       <MaterialIcon color={C.muted} name={expanded ? 'expand_less' : 'expand_more'} size={20} />
-    </Pressable>
+    </Touchable>
   );
 }
 

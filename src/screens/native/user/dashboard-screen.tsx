@@ -1,8 +1,10 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import {forwardRef, useCallback, useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
 import {AnimatedNumber, Reveal} from '@/components/motion';
+import {AuroraGradient, Sheen} from '@/components/color-motion';
 import AiActivityRecommendationCard from '@/components/ai-activity-recommendation-card';
 import SleepLogCard from '@/components/sleep-log-card';
 import {SpendingDonut} from '@/components/spending-charts';
@@ -48,7 +50,7 @@ function dayNumber(date: Date) { return new Intl.DateTimeFormat('th-TH', {day: '
 
 const SoftPress = forwardRef<View, {children: React.ReactNode; onLayout?: () => void; onPress: () => void; style?: object}>(
   function SoftPress({children, onLayout, onPress, style}, ref) {
-    return <Pressable onLayout={onLayout} onPress={onPress} ref={ref} style={({pressed}) => [style, pressed && styles.pressed]}>{children}</Pressable>;
+    return <Touchable onLayout={onLayout} onPress={onPress} ref={ref} style={({pressed}) => [style, pressed && styles.pressed]}>{children}</Touchable>;
   },
 );
 
@@ -71,10 +73,10 @@ const QUICK_ACTIONS = [
  */
 function QuickActions({onNavigate}: {onNavigate: (page: string) => void}) {
   return <View style={styles.quickActionsPanel}>
-    {QUICK_ACTIONS.map((action) => <Pressable key={action.page} onPress={() => onNavigate(action.page)} style={({pressed}) => [styles.quickAction, pressed && styles.pressed]}>
+    {QUICK_ACTIONS.map((action) => <Touchable key={action.page} onPress={() => onNavigate(action.page)} style={({pressed}) => [styles.quickAction, pressed && styles.pressed]}>
       <View style={[styles.quickActionIcon, {backgroundColor: action.bg}]}><MaterialIcon color={action.fg} name={action.icon} size={22} /></View>
       <Text style={styles.quickActionLabel}>{action.label}</Text>
-    </Pressable>)}
+    </Touchable>)}
   </View>;
 }
 
@@ -247,18 +249,18 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
 
       {!data ? <View style={styles.loading}><ActivityIndicator color={colors.sage} size="large" /><Text style={styles.muted}>กำลังโหลดข้อมูลจาก Firebase</Text></View> : <>
         <Reveal index={0} slide={false}>
-        <SoftPress onLayout={aiCardOnLayout} onPress={() => onNavigate('smartlife_ai_assistant')} ref={aiCardRef} style={styles.aiCard}><LinearGradient colors={['#769674', '#8fa69a', '#a8b7aa']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={StyleSheet.absoluteFill} />
+        <SoftPress onLayout={aiCardOnLayout} onPress={() => onNavigate('smartlife_ai_assistant')} ref={aiCardRef} style={styles.aiCard}><AuroraGradient colors={['#769674', '#8fa69a', '#9297bb', '#a8b7aa']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={StyleSheet.absoluteFill} /><Sheen radius={18} />
           <View style={styles.aiTop}><View style={styles.aiHeading}><MaterialIcon color="#fff" name="smart_toy" size={21} /><Text style={styles.aiTitle}>AI Assistant</Text></View>
             {/* Its own tap target: opens the assistant and starts listening right
               away, instead of landing on a blank chat the user then has to tap
               the mic in again to actually use. */}
-            <Pressable accessibilityLabel="พูดกับ AI ผู้ช่วยด้วยเสียง" onPress={() => onNavigate('smartlife_ai_assistant?autoListen=1')} style={({pressed}) => [styles.mic, pressed && styles.pressed]}>
+            <Touchable accessibilityLabel="พูดกับ AI ผู้ช่วยด้วยเสียง" onPress={() => onNavigate('smartlife_ai_assistant?autoListen=1')} style={({pressed}) => [styles.mic, pressed && styles.pressed]}>
               <MaterialIcon name="mic" size={21} />
-            </Pressable>
+            </Touchable>
           </View>
-          <Pressable onPress={() => onNavigate(`smartlife_ai_assistant?autoAsk=${encodeURIComponent('วันนี้ฉันมีเรียนกี่โมง?')}`)} style={({pressed}) => [styles.prompt, pressed && styles.pressed]}>
+          <Touchable onPress={() => onNavigate(`smartlife_ai_assistant?autoAsk=${encodeURIComponent('วันนี้ฉันมีเรียนกี่โมง?')}`)} style={({pressed}) => [styles.prompt, pressed && styles.pressed]}>
             <Text numberOfLines={1} style={styles.promptText}>“วันนี้ฉันมีเรียนกี่โมง?”</Text><MaterialIcon color="#fff" name="chevron_right" size={22} />
-          </Pressable>
+          </Touchable>
           <View style={styles.quickAnswer}><Text style={styles.quickQuestion}>“เหลือเงินกินข้าวเท่าไหร่?”</Text><View style={styles.quickAnswerRight}><Text style={styles.quickValue}>{allowanceAnswer}</Text><MaterialIcon color={colors.pine} name="chevron_right" size={16} /></View></View>
         </SoftPress>
         </Reveal>
@@ -270,7 +272,7 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
         <View style={[styles.priorityCard, {overflow: 'hidden'}]}><LinearGradient colors={['rgba(255,255,255,.98)', '#eef4ea']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={StyleSheet.absoluteFill} />
           <View style={styles.priorityHeader}><View style={styles.priorityTitleRow}><MaterialIcon color={colors.sageDark} name="auto_awesome" size={18} /><Text style={styles.priorityTitle}>AI จัดลำดับวันนี้</Text></View><View style={styles.dynamicBadge}><Text style={styles.dynamicText}>Dynamic</Text></View></View>
           <Text style={styles.priorityCaption}>ระบบดันสอบและงานด่วนขึ้นก่อนตามบริบทของวัน</Text>
-          {urgent.length ? urgent.map((item, index) => <View key={string(item, 'id', String(index))} style={styles.priorityItem}><View style={[styles.rank, index === 1 && styles.rankSoft]}><Text style={styles.rankText}>{index + 1}</Text></View><View style={styles.priorityCopy}><Text numberOfLines={1} style={styles.priorityItemTitle}>{string(item, 'title')}</Text><Text style={styles.priorityItemSub}>{time(item.startAt)} · {string(item, 'type', 'งานสำคัญ')} · คะแนน {priorityScore(item)}</Text><View style={styles.reasonWrap}>{priorityReasons(item).map((reason) => <View key={reason} style={styles.reasonChip}><Text style={styles.reasonText}>{reason}</Text></View>)}</View></View><View style={styles.priorityActions}><View style={styles.urgency}><Text style={styles.urgencyText}>{index === 0 ? 'ด่วน' : 'สำคัญ'}</Text></View><Pressable accessibilityLabel={`ทำ ${string(item, 'title')} ให้เสร็จ`} disabled={Boolean(completingId)} onPress={() => void markComplete(item)} style={({pressed}) => [styles.doneButton, pressed && styles.pressed]}>{completingId === string(item, 'id', '') ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="check" size={15} />}<Text style={styles.doneText}>เสร็จ</Text></Pressable></View></View>) : <View style={styles.priorityItem}><View style={styles.rank}><MaterialIcon color="#fff" name="check" size={15} /></View><View style={styles.priorityCopy}><Text style={styles.priorityItemTitle}>วันนี้ไม่มีงานด่วน</Text><Text style={styles.priorityItemSub}>AI จะอัปเดตเมื่อมีรายการใหม่</Text></View></View>}
+          {urgent.length ? urgent.map((item, index) => <View key={string(item, 'id', String(index))} style={styles.priorityItem}><View style={[styles.rank, index === 1 && styles.rankSoft]}><Text style={styles.rankText}>{index + 1}</Text></View><View style={styles.priorityCopy}><Text numberOfLines={1} style={styles.priorityItemTitle}>{string(item, 'title')}</Text><Text style={styles.priorityItemSub}>{time(item.startAt)} · {string(item, 'type', 'งานสำคัญ')} · คะแนน {priorityScore(item)}</Text><View style={styles.reasonWrap}>{priorityReasons(item).map((reason) => <View key={reason} style={styles.reasonChip}><Text style={styles.reasonText}>{reason}</Text></View>)}</View></View><View style={styles.priorityActions}><View style={styles.urgency}><Text style={styles.urgencyText}>{index === 0 ? 'ด่วน' : 'สำคัญ'}</Text></View><Touchable accessibilityLabel={`ทำ ${string(item, 'title')} ให้เสร็จ`} disabled={Boolean(completingId)} onPress={() => void markComplete(item)} style={({pressed}) => [styles.doneButton, pressed && styles.pressed]}>{completingId === string(item, 'id', '') ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="check" size={15} />}<Text style={styles.doneText}>เสร็จ</Text></Touchable></View></View>) : <View style={styles.priorityItem}><View style={styles.rank}><MaterialIcon color="#fff" name="check" size={15} /></View><View style={styles.priorityCopy}><Text style={styles.priorityItemTitle}>วันนี้ไม่มีงานด่วน</Text><Text style={styles.priorityItemSub}>AI จะอัปเดตเมื่อมีรายการใหม่</Text></View></View>}
         </View>
         </Reveal>
 
@@ -278,7 +280,7 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
         <QuickActions onNavigate={onNavigate} />
         </Reveal>
 
-        {showDevTools && pending.length === 0 && transactions.length === 0 ? <Pressable disabled={seeding} onPress={seedAiDynamicData} style={({pressed}) => [styles.seedCard, pressed && styles.pressed, seeding && {opacity: .6}]}><View style={styles.seedIcon}><MaterialIcon color="#8a611c" name="database" size={20} /></View><View style={{flex: 1}}><View style={styles.seedHeadingRow}><Text style={styles.seedTitle}>เติมข้อมูลทดสอบ AI Dynamic</Text><View style={styles.devTag}><Text style={styles.devTagText}>DEV</Text></View></View><Text style={styles.seedSub}>เพิ่มตาราง งาน โน้ต และการเงินเข้า Firebase ของบัญชีนี้</Text></View><Text style={styles.seedAction}>{seeding ? 'กำลังเพิ่ม...' : 'เพิ่มเลย'}</Text></Pressable> : null}
+        {showDevTools && pending.length === 0 && transactions.length === 0 ? <Touchable disabled={seeding} onPress={seedAiDynamicData} style={({pressed}) => [styles.seedCard, pressed && styles.pressed, seeding && {opacity: .6}]}><View style={styles.seedIcon}><MaterialIcon color="#8a611c" name="database" size={20} /></View><View style={{flex: 1}}><View style={styles.seedHeadingRow}><Text style={styles.seedTitle}>เติมข้อมูลทดสอบ AI Dynamic</Text><View style={styles.devTag}><Text style={styles.devTagText}>DEV</Text></View></View><Text style={styles.seedSub}>เพิ่มตาราง งาน โน้ต และการเงินเข้า Firebase ของบัญชีนี้</Text></View><Text style={styles.seedAction}>{seeding ? 'กำลังเพิ่ม...' : 'เพิ่มเลย'}</Text></Touchable> : null}
 
         <Reveal index={4}>
         <View style={styles.stats}><StatCard icon="calendar_today" label="คลาสเรียน" value={schedules.length} /><StatCard icon="task_alt" label="งานที่ต้องทำ" tint={colors.noteSoft} value={pending.length} /><StatCard icon="account_balance_wallet" label={allowance ? 'งบวันนี้' : 'ยังไม่ได้ตั้งงบ'} tint={colors.financeSoft} value={allowanceValue} /></View>
@@ -301,7 +303,7 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
 
         <Reveal index={8}>
         <View style={styles.weeklySpendingCard}>
-          <View style={styles.weeklySpendingHead}><View><Text style={styles.weeklySpendingEyebrow}>สรุปการใช้เงิน</Text><Text style={styles.weeklySpendingTitle}>รายจ่ายสัปดาห์นี้</Text></View><Pressable accessibilityLabel="ดูรายละเอียดรายจ่ายรายสัปดาห์" onLayout={weeklySpendingOnLayout} onPress={() => onNavigate('smartlife_finance_week')} ref={weeklySpendingRef} style={styles.weeklySpendingLink}><Text style={styles.weeklySpendingLinkText}>ดูทั้งหมด</Text><MaterialIcon color={colors.sageDark} name="chevron_right" size={18} /></Pressable></View>
+          <View style={styles.weeklySpendingHead}><View><Text style={styles.weeklySpendingEyebrow}>สรุปการใช้เงิน</Text><Text style={styles.weeklySpendingTitle}>รายจ่ายสัปดาห์นี้</Text></View><Touchable accessibilityLabel="ดูรายละเอียดรายจ่ายรายสัปดาห์" onLayout={weeklySpendingOnLayout} onPress={() => onNavigate('smartlife_finance_week')} ref={weeklySpendingRef} style={styles.weeklySpendingLink}><Text style={styles.weeklySpendingLinkText}>ดูทั้งหมด</Text><MaterialIcon color={colors.sageDark} name="chevron_right" size={18} /></Touchable></View>
           <SpendingDonut byCategory={weeklySpending.byCategory} compact total={weeklySpending.total} />
         </View>
         </Reveal>

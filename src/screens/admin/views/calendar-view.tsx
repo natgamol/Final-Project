@@ -1,5 +1,6 @@
 import {useCallback, useMemo, useState} from 'react';
 import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 import {Calendar} from 'react-native-calendars';
 
@@ -127,24 +128,24 @@ export default function AdminCalendarView() {
         <>
           <AdminCard>
             <View style={local.monthBar}>
-              <Pressable
+              <Touchable
                 accessibilityLabel="เดือนก่อนหน้า"
                 onPress={() => setMonthKey(shiftMonth(monthKey, -1))}
                 style={({pressed}) => [local.monthNav, pressed && ui.pressed]}
               >
                 <MaterialIcon color={C.pine} name="chevron_left" size={22} />
-              </Pressable>
+              </Touchable>
               <View style={{alignItems: 'center', flex: 1}}>
                 <Text style={local.monthTitle}>{monthLabel(monthKey)}</Text>
                 <Text style={local.monthSub}>ปฏิทินของ {userLabel(selected)}</Text>
               </View>
-              <Pressable
+              <Touchable
                 accessibilityLabel="เดือนถัดไป"
                 onPress={() => setMonthKey(shiftMonth(monthKey, 1))}
                 style={({pressed}) => [local.monthNav, pressed && ui.pressed]}
               >
                 <MaterialIcon color={C.pine} name="chevron_right" size={22} />
-              </Pressable>
+              </Touchable>
             </View>
             <View style={local.monthActions}>
               <SmallButton icon="today" label="ไปเดือนปัจจุบัน" onPress={goToToday} tone="green" />
@@ -213,7 +214,7 @@ export default function AdminCalendarView() {
               dayEvents.map((event) => {
                 const [statusLabel, statusColor] = STATUS_LABELS[(event.status ?? '').toLowerCase()] ?? ['', C.muted];
                 return (
-                  <Pressable
+                  <Touchable
                     key={`${event.entity}-${event.id}`}
                     onPress={() => setDetail(event)}
                     style={({pressed}) => [local.eventRow, pressed && ui.pressed]}
@@ -231,7 +232,7 @@ export default function AdminCalendarView() {
                       </View>
                     </View>
                     <MaterialIcon color={C.muted} name="chevron_right" size={20} />
-                  </Pressable>
+                  </Touchable>
                 );
               })
             )}
@@ -262,9 +263,9 @@ export default function AdminCalendarView() {
               <DetailRow icon="notes" label={detail?.entity === 'schedule' ? 'รหัสวิชา' : 'บันทึก'} value={detail?.note || '-'} />
               <DetailRow icon="tag" label="รหัสรายการ" value={detail?.id ?? '-'} />
             </ScrollView>
-            <Pressable onPress={() => setDetail(null)} style={({pressed}) => [local.modalClose, pressed && ui.pressed]}>
+            <Touchable onPress={() => setDetail(null)} style={({pressed}) => [local.modalClose, pressed && ui.pressed]}>
               <Text style={local.modalCloseText}>ปิด</Text>
-            </Pressable>
+            </Touchable>
           </Pressable>
         </Pressable>
       </Modal>

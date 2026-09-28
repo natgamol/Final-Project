@@ -4,6 +4,7 @@ import NativeDateTimePicker from '@/components/date-time-picker';
 import ScheduleConflictDialog from '@/components/schedule-conflict-dialog';
 import ConfirmDialog from '@/components/confirm-dialog';
 import {ActivityIndicator, Animated, KeyboardAvoidingView, Modal, NativeModules, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {AsyncActionOverlay, type AsyncActionStatus} from '@/components/async-action-ui';
@@ -318,7 +319,7 @@ function MessageBubble({
                     <Text numberOfLines={2} style={local.pendingTaskTitle}>{task.title}</Text>
                     <Text style={local.pendingTaskDue}>{task.dueAt ? `กำหนด ${formatDate(task.dueAt)}` : 'ไม่ระบุกำหนด'}</Text>
                   </View>
-                  <Pressable
+                  <Touchable
                     accessibilityLabel={completed ? `${task.title} เสร็จแล้ว` : `ทำเครื่องหมาย ${task.title} ว่าเสร็จแล้ว`}
                     disabled={busy || Boolean(completingTaskId) || completed}
                     onPress={() => onCompleteTask(message.id, task)}
@@ -330,7 +331,7 @@ function MessageBubble({
                     ]}>
                     {completing ? <ActivityIndicator color="#ffffff" size="small" /> : <MaterialIcon color={completed ? '#5b7c57' : '#ffffff'} name="check" size={15} />}
                     <Text style={[local.pendingTaskButtonText, completed && local.pendingTaskButtonTextDone]}>{completed ? 'บันทึกแล้ว' : 'เสร็จแล้ว'}</Text>
-                  </Pressable>
+                  </Touchable>
                 </View>
               );
             })}
@@ -339,7 +340,7 @@ function MessageBubble({
         {!isUser && message.suggestions?.length ? (
           <View style={local.suggestionList}>
             {message.suggestions.map((suggestion) => (
-              <Pressable
+              <Touchable
                 accessibilityLabel={`ถามต่อ: ${suggestion}`}
                 disabled={busy}
                 key={suggestion}
@@ -347,31 +348,31 @@ function MessageBubble({
                 style={({pressed}) => [local.suggestionChip, pressed && local.pressed, busy && local.disabled]}>
                 <Text style={local.suggestionText}>{suggestion}</Text>
                 <MaterialIcon color="#668166" name="arrow_forward" size={14} />
-              </Pressable>
+              </Touchable>
             ))}
           </View>
         ) : null}
         {!isUser && message.id !== 'assistant-intro' ? (
           <View style={local.feedbackRow}>
             <Text style={local.feedbackPrompt}>คำตอบนี้ช่วยได้ไหม</Text>
-            <Pressable
+            <Touchable
               accessibilityLabel={speaking ? 'หยุดอ่านคำตอบ' : 'อ่านคำตอบออกเสียง'}
               onPress={() => onSpeak(message)}
               style={[local.feedbackButton, speaking && local.feedbackButtonSpeaking]}>
               <MaterialIcon color={speaking ? '#ffffff' : '#668166'} name={speaking ? 'stop_circle' : 'volume_up'} size={16} />
-            </Pressable>
-            <Pressable
+            </Touchable>
+            <Touchable
               accessibilityLabel="คำตอบมีประโยชน์"
               onPress={() => onFeedback(message, 'helpful')}
               style={[local.feedbackButton, message.feedback === 'helpful' && local.feedbackButtonActive]}>
               <MaterialIcon color={message.feedback === 'helpful' ? '#ffffff' : '#668166'} name="thumb_up" size={15} />
-            </Pressable>
-            <Pressable
+            </Touchable>
+            <Touchable
               accessibilityLabel="คำตอบยังไม่ตรง"
               onPress={() => onFeedback(message, 'not_helpful')}
               style={[local.feedbackButton, message.feedback === 'not_helpful' && local.feedbackButtonNegative]}>
               <MaterialIcon color={message.feedback === 'not_helpful' ? '#ffffff' : '#9a6666'} name="thumb_down" size={15} />
-            </Pressable>
+            </Touchable>
           </View>
         ) : null}
       </View>
@@ -491,7 +492,7 @@ function ActionCard({
       </View>
       {!done && action.entity === 'schedule' ? (
         <View style={local.actionEditorWrap}>
-          <Pressable
+          <Touchable
             accessibilityLabel="แก้ไขวันที่ เวลา และระยะเวลาก่อนบันทึก"
             disabled={busy}
             onPress={() => { setEditorOpen((value) => !value); setEditError(''); }}
@@ -499,25 +500,25 @@ function ActionCard({
             <MaterialIcon color={editorOpen ? '#ffffff' : '#5d8059'} name="edit_calendar" size={18} />
             <Text style={[local.actionEditorToggleText, editorOpen && local.actionEditorToggleTextActive]}>{editorOpen ? 'กำลังใช้เวลาที่คุณกำหนด' : 'แก้ไขวัน เวลา และระยะเวลาเอง'}</Text>
             <MaterialIcon color={editorOpen ? '#ffffff' : '#71806d'} name={editorOpen ? 'expand_less' : 'expand_more'} size={18} />
-          </Pressable>
+          </Touchable>
           {editorOpen ? (
             <View style={local.actionEditorPanel}>
               <View style={local.actionEditorRow}>
                 <View style={local.actionEditorField}>
                   <Text style={local.actionEditorLabel}>วันที่</Text>
-                  <Pressable accessibilityLabel="เลือกวันที่" onPress={() => setPickerTarget('date')} style={local.actionPickerButton}>
+                  <Touchable accessibilityLabel="เลือกวันที่" onPress={() => setPickerTarget('date')} style={local.actionPickerButton}>
                     <MaterialIcon color="#5d8059" name="calendar_month" size={18} />
                     <Text style={local.actionPickerValue}>{dateDraft}</Text>
                     <MaterialIcon color="#879383" name="expand_more" size={17} />
-                  </Pressable>
+                  </Touchable>
                 </View>
                 <View style={local.actionEditorFieldSmall}>
                   <Text style={local.actionEditorLabel}>เวลา</Text>
-                  <Pressable accessibilityLabel="เลือกชั่วโมงและนาที" onPress={() => setPickerTarget('time')} style={local.actionPickerButton}>
+                  <Touchable accessibilityLabel="เลือกชั่วโมงและนาที" onPress={() => setPickerTarget('time')} style={local.actionPickerButton}>
                     <MaterialIcon color="#5d8059" name="schedule" size={18} />
                     <Text style={local.actionPickerValue}>{timeDraft}</Text>
                     <MaterialIcon color="#879383" name="expand_more" size={17} />
-                  </Pressable>
+                  </Touchable>
                 </View>
               </View>
               {pickerTarget ? <NativeDateTimePicker
@@ -536,7 +537,7 @@ function ActionCard({
                 </View>
                 <View style={local.actionEditorHintBadge}><MaterialIcon color="#5d8059" name="verified" size={15} /><Text style={local.actionEditorHintBadgeText}>ตรวจช่วงว่างก่อนบันทึก</Text></View>
               </View>
-              <View style={local.actionDurationOptions}>{durationOptions.map((minutes) => <Pressable key={minutes} onPress={() => setDurationDraft(String(minutes))} style={[local.actionDurationChip, durationDraft === String(minutes) && local.actionDurationChipActive]}><Text style={[local.actionDurationChipText, durationDraft === String(minutes) && local.actionDurationChipTextActive]}>{minutes < 60 ? `${minutes} นาที` : `${minutes / 60} ชม.`}</Text></Pressable>)}</View>
+              <View style={local.actionDurationOptions}>{durationOptions.map((minutes) => <Touchable key={minutes} onPress={() => setDurationDraft(String(minutes))} style={[local.actionDurationChip, durationDraft === String(minutes) && local.actionDurationChipActive]}><Text style={[local.actionDurationChipText, durationDraft === String(minutes) && local.actionDurationChipTextActive]}>{minutes < 60 ? `${minutes} นาที` : `${minutes / 60} ชม.`}</Text></Touchable>)}</View>
               {editError ? <Text style={local.actionEditorError}>{editError}</Text> : <Text style={local.actionEditorHint}>เวลาที่คุณเลือกจะมีสิทธิ์เหนือคำแนะนำของ AI และระบบจะตรวจสอบอีกครั้งก่อนบันทึก</Text>}
             </View>
           ) : null}
@@ -544,13 +545,13 @@ function ActionCard({
       ) : null}
       {done ? <StatusPill status={action.status} /> : (
         <View style={local.confirmRow}>
-          <Pressable disabled={busy} onPress={onReject} style={[local.secondaryButton, busy && local.disabled]}>
+          <Touchable disabled={busy} onPress={onReject} style={[local.secondaryButton, busy && local.disabled]}>
             <Text style={local.secondaryButtonText}>ไม่บันทึก</Text>
-          </Pressable>
-          <Pressable disabled={busy} onPress={confirm} style={[local.actionConfirmButton, busy && local.disabled]}>
+          </Touchable>
+          <Touchable disabled={busy} onPress={confirm} style={[local.actionConfirmButton, busy && local.disabled]}>
             {saving ? <ActivityIndicator color="#ffffff" size="small" /> : <MaterialIcon color="#ffffff" name="check" size={19} />}
             <Text style={local.actionConfirmText}>{saving ? 'กำลังบันทึก...' : 'ยืนยันบันทึก'}</Text>
-          </Pressable>
+          </Touchable>
         </View>
       )}
     </Card>
@@ -630,10 +631,10 @@ function InlineAdaptivePanel({
         </View>
         <Text style={local.inlineAdaptiveReason}>{suggestion.explanation}</Text>
         <Text style={local.inlineAdaptiveLearning}>{suggestion.observationCount > 0 ? `เรียนรู้จากพฤติกรรม ${suggestion.observationCount} ครั้ง` : 'ใช้ตารางจริงและค่าที่คุณตั้งไว้ ข้อมูลพฤติกรรมยังไม่พอสำหรับสรุปถาวร'}</Text>
-        {suggestion.alternativeOptions?.length ? <View style={local.inlineAlternativeList}>{suggestion.alternativeOptions.slice(0, 2).map((option) => <Pressable disabled={Boolean(busyKey)} key={`${suggestion.id}-${option.startAt}`} onPress={() => onAlternative(suggestion, option.startAt)} style={({pressed}) => [local.inlineAlternativeButton, pressed && local.pressed, Boolean(busyKey) && local.disabled]}><MaterialIcon color="#5e7e5b" name="schedule" size={15} /><Text style={local.inlineAlternativeText}>{option.label || formatDate(option.startAt, timeZone)}</Text></Pressable>)}</View> : null}
+        {suggestion.alternativeOptions?.length ? <View style={local.inlineAlternativeList}>{suggestion.alternativeOptions.slice(0, 2).map((option) => <Touchable disabled={Boolean(busyKey)} key={`${suggestion.id}-${option.startAt}`} onPress={() => onAlternative(suggestion, option.startAt)} style={({pressed}) => [local.inlineAlternativeButton, pressed && local.pressed, Boolean(busyKey) && local.disabled]}><MaterialIcon color="#5e7e5b" name="schedule" size={15} /><Text style={local.inlineAlternativeText}>{option.label || formatDate(option.startAt, timeZone)}</Text></Touchable>)}</View> : null}
         <View style={local.inlineAdaptiveActions}>
-          <Pressable disabled={Boolean(busyKey)} onPress={() => onReject(suggestion)} style={[local.inlineRejectButton, Boolean(busyKey) && local.disabled]}><Text style={local.inlineRejectText}>ไม่ใช้เวลานี้</Text></Pressable>
-          <Pressable disabled={Boolean(busyKey)} onPress={() => onAccept(suggestion)} style={[local.inlineAcceptButton, Boolean(busyKey) && local.disabled]}>{loading ? <ActivityIndicator color="#ffffff" size="small" /> : <MaterialIcon color="#ffffff" name="check" size={18} />}<Text style={local.inlineAcceptText}>{loading ? 'กำลังตรวจ...' : 'ยืนยันใช้เวลานี้'}</Text></Pressable>
+          <Touchable disabled={Boolean(busyKey)} onPress={() => onReject(suggestion)} style={[local.inlineRejectButton, Boolean(busyKey) && local.disabled]}><Text style={local.inlineRejectText}>ไม่ใช้เวลานี้</Text></Touchable>
+          <Touchable disabled={Boolean(busyKey)} onPress={() => onAccept(suggestion)} style={[local.inlineAcceptButton, Boolean(busyKey) && local.disabled]}>{loading ? <ActivityIndicator color="#ffffff" size="small" /> : <MaterialIcon color="#ffffff" name="check" size={18} />}<Text style={local.inlineAcceptText}>{loading ? 'กำลังตรวจ...' : 'ยืนยันใช้เวลานี้'}</Text></Touchable>
         </View>
       </View>;
     })}
@@ -737,9 +738,9 @@ function AssistantInsights({adaptiveDashboard, data, onAsk, uid}: {adaptiveDashb
     <View style={local.insightHeader}><Text style={local.insightHeading}>วิเคราะห์ข้อมูล 7 วันที่ผ่านมา</Text><Text style={local.insightCount}>{insight.workload} รายการ</Text></View>
     <View style={local.insightDivider} />
     <View style={local.burnoutPanel}><View style={local.burnoutIcon}><MaterialIcon color="#8a8050" name="warning_amber" size={18} /></View><View style={{flex: 1}}><Text style={local.burnoutTitle}>ความเสี่ยงสภาวะหมดไฟ: {insight.risk}</Text>{insight.riskFacts.map((fact) => <Text key={fact} style={local.burnoutText}>{fact}</Text>)}<RiskMeter level={insight.riskLevel} score={insight.score} /></View></View>
-    <View style={local.behaviorPanel}><View style={local.behaviorHeading}><View style={local.behaviorIcon}><MaterialIcon color="#668d65" name="schedule" size={18} /></View><View style={{flex: 1}}><Text style={local.behaviorTitle}>AI เรียนรู้พฤติกรรม</Text><Text style={local.behaviorText}>{insight.behaviorEvidence}</Text></View></View><View style={local.behaviorTiming}><View style={local.timingTile}><Text style={local.timingLabel}>ช่วงที่เหมาะ</Text><Text style={local.timingValue}>{insight.preferred}</Text></View><View style={local.timingTile}><Text style={local.timingLabel}>ระยะเวลาที่แนะนำ</Text><Text style={local.timingValue}>โฟกัส {insight.focusMinutes} นาที</Text></View></View><Pressable onPress={() => onAsk(`ช่วยจัดช่วงโฟกัส ${insight.focusMinutes} นาทีให้เหมาะกับตารางของฉัน`)} style={local.behaviorAction}><MaterialIcon color="#fff" name="check" size={17} /><Text style={local.behaviorActionText}>ใช้แผน Adaptive ในแชตนี้</Text></Pressable></View>
+    <View style={local.behaviorPanel}><View style={local.behaviorHeading}><View style={local.behaviorIcon}><MaterialIcon color="#668d65" name="schedule" size={18} /></View><View style={{flex: 1}}><Text style={local.behaviorTitle}>AI เรียนรู้พฤติกรรม</Text><Text style={local.behaviorText}>{insight.behaviorEvidence}</Text></View></View><View style={local.behaviorTiming}><View style={local.timingTile}><Text style={local.timingLabel}>ช่วงที่เหมาะ</Text><Text style={local.timingValue}>{insight.preferred}</Text></View><View style={local.timingTile}><Text style={local.timingLabel}>ระยะเวลาที่แนะนำ</Text><Text style={local.timingValue}>โฟกัส {insight.focusMinutes} นาที</Text></View></View><Touchable onPress={() => onAsk(`ช่วยจัดช่วงโฟกัส ${insight.focusMinutes} นาทีให้เหมาะกับตารางของฉัน`)} style={local.behaviorAction}><MaterialIcon color="#fff" name="check" size={17} /><Text style={local.behaviorActionText}>ใช้แผน Adaptive ในแชตนี้</Text></Touchable></View>
     <View style={local.focusHeader}><Text style={local.focusHeading}>AI แนะนำให้โฟกัส</Text><Text style={local.focusCount}>{insight.focus.length} รายการ</Text></View>
-    <View style={local.focusList}>{insight.focus.map((item, index) => <Pressable key={`${item.title}-${index}`} onPress={() => onAsk(`ช่วยวางแผน ${item.title}`)} style={local.focusItem}><View style={local.focusIcon}><MaterialIcon color="#678266" name={item.icon} size={17} /></View><View style={{flex: 1}}><Text numberOfLines={1} style={local.focusItemTitle}>{item.title}</Text><Text numberOfLines={1} style={local.focusText}>{item.subtitle}</Text></View><MaterialIcon color="#95a18f" name="chevron_right" size={18} /></Pressable>)}</View>
+    <View style={local.focusList}>{insight.focus.map((item, index) => <Touchable key={`${item.title}-${index}`} onPress={() => onAsk(`ช่วยวางแผน ${item.title}`)} style={local.focusItem}><View style={local.focusIcon}><MaterialIcon color="#678266" name={item.icon} size={17} /></View><View style={{flex: 1}}><Text numberOfLines={1} style={local.focusItemTitle}>{item.title}</Text><Text numberOfLines={1} style={local.focusText}>{item.subtitle}</Text></View><MaterialIcon color="#95a18f" name="chevron_right" size={18} /></Touchable>)}</View>
   </View>;
 }
 
@@ -2054,13 +2055,13 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
               </View>
             </View>
             <View style={local.topActions}>
-              <Pressable accessibilityLabel="ย้อนดูประวัติแชท" onPress={openChatHistory} style={local.circleButton}>
+              <Touchable accessibilityLabel="ย้อนดูประวัติแชท" onPress={openChatHistory} style={local.circleButton}>
                 <MaterialIcon color="#26321f" name="history" size={20} />
-              </Pressable>
-              <Pressable accessibilityLabel="เริ่มแชทใหม่" disabled={busy || !historyReady} onLayout={newChatOnLayout} onPress={() => setNewChatMenuOpen(true)} ref={newChatRef} style={[(busy || !historyReady) ? local.newChatPillDisabled : local.newChatPill]}>
+              </Touchable>
+              <Touchable accessibilityLabel="เริ่มแชทใหม่" disabled={busy || !historyReady} onLayout={newChatOnLayout} onPress={() => setNewChatMenuOpen(true)} ref={newChatRef} style={[(busy || !historyReady) ? local.newChatPillDisabled : local.newChatPill]}>
                 <MaterialIcon color="#ffffff" name="add_comment" size={16} />
                 <Text style={local.newChatPillText}>แชทใหม่</Text>
-              </Pressable>
+              </Touchable>
             </View>
           </View>
 
@@ -2076,7 +2077,7 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
           <Text style={local.shortcutSectionLabel}>ลองถาม AI ว่า...</Text>
           <View style={local.shortcutGrid}>
             {shortcuts.map(([icon, title, subtitle, target]) => (
-              <Pressable disabled={busy} key={title} onPress={() => {
+              <Touchable disabled={busy} key={title} onPress={() => {
                 if (target === ADAPTIVE_AI_SHORTCUT) {
                   setQuickAddOpen(true);
                   setQuickAddCategory('adaptive');
@@ -2090,7 +2091,7 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
                   <Text style={local.shortcutSubtitle}>{subtitle}</Text>
                 </View>
                 <MaterialIcon color="#b5c4b0" name="chevron_right" size={18} />
-              </Pressable>
+              </Touchable>
             ))}
           </View>
 
@@ -2134,10 +2135,10 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
                 {/* Saving is deliberately not stoppable: the write may already
                     have gone through, and a button that says otherwise lies. */}
                 {savingActionId ? null : (
-                  <Pressable accessibilityLabel="หยุดรอคำตอบ" accessibilityRole="button" onPress={stopReply} style={local.stopButton}>
+                  <Touchable accessibilityLabel="หยุดรอคำตอบ" accessibilityRole="button" onPress={stopReply} style={local.stopButton}>
                     <MaterialIcon color="#7d6a63" name="stop_circle" size={17} />
                     <Text style={local.stopButtonText}>หยุด</Text>
-                  </Pressable>
+                  </Touchable>
                 )}
               </View>
             ) : null}
@@ -2145,9 +2146,9 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
           </View> : null}
         </ScrollView>
         {showScrollToBottom && !quickAddOpen ? (
-          <Pressable accessibilityLabel="เลื่อนไปข้อความล่าสุด" onPress={() => scrollToLatest(true)} style={({pressed}) => [local.scrollToBottomButton, pressed && local.pressed]}>
+          <Touchable accessibilityLabel="เลื่อนไปข้อความล่าสุด" onPress={() => scrollToLatest(true)} style={({pressed}) => [local.scrollToBottomButton, pressed && local.pressed]}>
             <MaterialIcon color="#4e6f4d" name="keyboard_arrow_down" size={26} />
-          </Pressable>
+          </Touchable>
         ) : null}
         {/* Refactored UI: a soft fade keeps scrolling content legible behind the floating composer. */}
         <LinearGradient colors={['rgba(241,244,240,0)', '#f1f4f0']} end={{x: 0, y: 1}} pointerEvents="none" start={{x: 0, y: 0}} style={local.inputFade} />
@@ -2156,14 +2157,14 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
             <View style={local.quickAddHeader}>
               {selectedQuickAddCategory ? (
                 <View style={local.quickAddCategoryHeader}>
-                  <Pressable accessibilityLabel="กลับไปเลือกหมวด" onPress={() => setQuickAddCategory(null)} style={local.quickAddBack}>
+                  <Touchable accessibilityLabel="กลับไปเลือกหมวด" onPress={() => setQuickAddCategory(null)} style={local.quickAddBack}>
                     <MaterialIcon color="#5d8059" name="arrow_back" size={18} />
-                  </Pressable>
+                  </Touchable>
                   <View style={{flex: 1}}>
                     <Text style={local.quickAddTitle}>คำถามลัด: {selectedQuickAddCategory.title}</Text>
                     <Text style={local.quickAddHint}>แตะคำถามเพื่อถาม AI ได้ทันที</Text>
                   </View>
-                  {selectedQuickAddCategory.id === 'ocr' ? <Pressable accessibilityLabel="ตั้งค่าคำถามลัด OCR" onPress={openOcrShortcutEditor} style={local.quickAddBack}><MaterialIcon color="#5d8059" name="settings" size={18} /></Pressable> : null}
+                  {selectedQuickAddCategory.id === 'ocr' ? <Touchable accessibilityLabel="ตั้งค่าคำถามลัด OCR" onPress={openOcrShortcutEditor} style={local.quickAddBack}><MaterialIcon color="#5d8059" name="settings" size={18} /></Touchable> : null}
                 </View>
               ) : (
                 <>
@@ -2176,50 +2177,50 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
               {selectedQuickAddCategory ? (
                 <>
                   {selectedQuickAddCategory.suggestions.map((item) => (
-                    <Pressable disabled={busy} key={item.title} onPress={() => item.action === 'activate_adaptive' ? void activateAdaptiveAi() : void sendMessage(item.prompt)} style={({pressed}) => [local.quickAddOption, pressed && local.pressed, busy && local.disabled]}>
+                    <Touchable disabled={busy} key={item.title} onPress={() => item.action === 'activate_adaptive' ? void activateAdaptiveAi() : void sendMessage(item.prompt)} style={({pressed}) => [local.quickAddOption, pressed && local.pressed, busy && local.disabled]}>
                       <View style={local.quickAddIcon}><MaterialIcon color="#5d8059" name={item.icon} size={19} /></View>
                       <View style={local.quickAddCopy}>
                         <Text style={local.quickAddOptionTitle}>{item.title}</Text>
                         <Text numberOfLines={1} style={local.quickAddDetail}>{item.detail}</Text>
                       </View>
                       <MaterialIcon color="#9aa595" name="arrow_forward_ios" size={14} />
-                    </Pressable>
+                    </Touchable>
                   ))}
-                  {selectedQuickAddCategory.id !== 'adaptive' ? <Pressable disabled={busy} onPress={() => selectedQuickAddCategory.id === 'ocr' ? openOcrShortcutEditor() : chooseQuickAdd(selectedQuickAddCategory.createPrompt)} style={({pressed}) => [local.quickAddCreate, pressed && local.pressed, busy && local.disabled]}>
+                  {selectedQuickAddCategory.id !== 'adaptive' ? <Touchable disabled={busy} onPress={() => selectedQuickAddCategory.id === 'ocr' ? openOcrShortcutEditor() : chooseQuickAdd(selectedQuickAddCategory.createPrompt)} style={({pressed}) => [local.quickAddCreate, pressed && local.pressed, busy && local.disabled]}>
                     <MaterialIcon color="#ffffff" name={selectedQuickAddCategory.id === 'ocr' ? 'settings' : 'add'} size={19} />
                     <Text style={local.quickAddCreateText}>{selectedQuickAddCategory.createLabel}</Text>
-                  </Pressable> : null}
+                  </Touchable> : null}
                 </>
               ) : (
                 <>
                   {quickAddCategories.map((item) => (
-                    <Pressable disabled={busy} key={item.id} onPress={() => setQuickAddCategory(item.id)} style={({pressed}) => [local.quickAddOption, pressed && local.pressed, busy && local.disabled]}>
+                    <Touchable disabled={busy} key={item.id} onPress={() => setQuickAddCategory(item.id)} style={({pressed}) => [local.quickAddOption, pressed && local.pressed, busy && local.disabled]}>
                       <View style={local.quickAddIcon}><MaterialIcon color="#5d8059" name={item.icon} size={19} /></View>
                       <View style={local.quickAddCopy}>
                         <Text style={local.quickAddOptionTitle}>{item.title}</Text>
                         <Text numberOfLines={1} style={local.quickAddDetail}>{item.detail}</Text>
                       </View>
                       <MaterialIcon color="#9aa595" name="chevron_right" size={18} />
-                    </Pressable>
+                    </Touchable>
                   ))}
-                  <Pressable disabled={busy} onPress={pickImportFile} style={({pressed}) => [local.quickAddOption, pressed && local.pressed, busy && local.disabled]}>
+                  <Touchable disabled={busy} onPress={pickImportFile} style={({pressed}) => [local.quickAddOption, pressed && local.pressed, busy && local.disabled]}>
                     <View style={local.quickAddIcon}><MaterialIcon color="#5d8059" name="upload_file" size={19} /></View>
                     <View style={local.quickAddCopy}>
                       <Text style={local.quickAddOptionTitle}>อัปโหลดไฟล์</Text>
                       <Text numberOfLines={1} style={local.quickAddDetail}>PDF, TXT, CSV ตารางเรียนหรืองาน</Text>
                     </View>
-                  </Pressable>
+                  </Touchable>
                 </>
               )}
             </View>
           </LinearGradient> : null}
           <View onLayout={composerOnLayout} ref={composerRef} style={local.composer}>
-            <Pressable accessibilityLabel="เปิดคำถามลัดและเมนูเพิ่มข้อมูล" disabled={busy} onPress={() => {
+            <Touchable accessibilityLabel="เปิดคำถามลัดและเมนูเพิ่มข้อมูล" disabled={busy} onPress={() => {
               if (quickAddOpen) setQuickAddCategory(null);
               setQuickAddOpen((value) => !value);
             }} style={[local.attachButton, quickAddOpen && local.attachButtonActive, busy && local.disabled]}>
               <MaterialIcon color={quickAddOpen ? '#ffffff' : '#7a8a76'} name={quickAddOpen ? 'close' : 'add'} size={24} />
-            </Pressable>
+            </Touchable>
             <TextInput
               multiline
               onChangeText={setInput}
@@ -2231,12 +2232,12 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
               style={local.input}
               value={input}
             />
-            <Pressable accessibilityLabel={listening ? 'หยุดฟังเสียง' : 'พูดเพื่อพิมพ์'} disabled={busy} onPress={toggleVoiceInput} style={[local.voiceButton, listening && local.voiceButtonActive, busy && local.disabled]}>
+            <Touchable accessibilityLabel={listening ? 'หยุดฟังเสียง' : 'พูดเพื่อพิมพ์'} disabled={busy} onPress={toggleVoiceInput} style={[local.voiceButton, listening && local.voiceButtonActive, busy && local.disabled]}>
               <MaterialIcon color={listening ? '#ffffff' : '#5d8059'} name={listening ? 'graphic_eq' : 'mic'} size={22} />
-            </Pressable>
-            <Pressable disabled={busy || !input.trim()} onPress={() => sendMessage()} style={[local.sendButton, (busy || !input.trim()) && local.disabled]}>
+            </Touchable>
+            <Touchable disabled={busy || !input.trim()} onPress={() => sendMessage()} style={[local.sendButton, (busy || !input.trim()) && local.disabled]}>
               <MaterialIcon color="#fff" name="send" size={22} />
-            </Pressable>
+            </Touchable>
           </View>
         </View>
       </View>
@@ -2247,16 +2248,16 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
             <View style={local.modalHandle} />
             <Text style={local.modalTitle}>เริ่มแชทใหม่</Text>
             <Text style={local.modalHint}>เลือกว่าจะเก็บบทสนทนานี้ไว้ในประวัติหรือไม่</Text>
-            <Pressable onPress={() => startNewConversation('persistent')} style={local.modalOption}>
+            <Touchable onPress={() => startNewConversation('persistent')} style={local.modalOption}>
               <View style={local.modalOptionIcon}><MaterialIcon color="#5d8059" name="add_comment" size={21} /></View>
               <View style={{flex: 1}}><Text style={local.modalOptionTitle}>แชทใหม่</Text><Text style={local.modalOptionText}>บันทึกข้อความไว้ในประวัติของบัญชีนี้</Text></View>
               <MaterialIcon color="#9aa595" name="chevron_right" size={20} />
-            </Pressable>
-            <Pressable onPress={() => startNewConversation('temporary')} style={local.modalOption}>
+            </Touchable>
+            <Touchable onPress={() => startNewConversation('temporary')} style={local.modalOption}>
               <View style={local.modalOptionIcon}><MaterialIcon color="#5d8059" name="timer" size={21} /></View>
               <View style={{flex: 1}}><Text style={local.modalOptionTitle}>แชทชั่วคราว</Text><Text style={local.modalOptionText}>ไม่บันทึกข้อความไว้ในประวัติหรือในเครื่อง</Text></View>
               <MaterialIcon color="#9aa595" name="chevron_right" size={20} />
-            </Pressable>
+            </Touchable>
           </Pressable>
         </Pressable>
       </Modal>
@@ -2267,20 +2268,20 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
             <View style={local.modalHandle} />
             <View style={local.modalHeaderRow}>
               <View style={{flex: 1}}><Text style={local.modalTitle}>ประวัติแชท</Text><Text style={local.modalHint}>แตะเพื่อเปิดต่อ หรือลบรายการที่ไม่ต้องการ</Text></View>
-              <Pressable onPress={() => setChatHistoryOpen(false)} style={local.modalClose}><MaterialIcon color="#5d6658" name="close" size={20} /></Pressable>
+              <Touchable onPress={() => setChatHistoryOpen(false)} style={local.modalClose}><MaterialIcon color="#5d6658" name="close" size={20} /></Touchable>
             </View>
             {chatHistoryLoading ? <ActivityIndicator color="#668d65" style={{marginVertical: 30}} /> : (
               <ScrollView contentContainerStyle={local.historyList} showsVerticalScrollIndicator={false}>
                 {chatHistory.map((conversation) => (
-                  <Pressable key={conversation.id} onPress={() => selectHistoryConversation(conversation)} style={local.historyItem}>
+                  <Touchable key={conversation.id} onPress={() => selectHistoryConversation(conversation)} style={local.historyItem}>
                     <View style={local.historyIcon}><MaterialIcon color="#5d8059" name="chat_bubble_outline" size={19} /></View>
                     <View style={{flex: 1}}>
                       <Text numberOfLines={1} style={local.historyTitle}>{conversation.title}</Text>
                       <Text numberOfLines={1} style={local.historyPreview}>{conversation.lastMessagePreview || `${conversation.messageCount} ข้อความ`}</Text>
                       <Text style={local.historyDate}>{formatDate(conversation.updatedAt.toISOString())}</Text>
                     </View>
-                    <Pressable accessibilityLabel="ลบแชท" hitSlop={8} onPress={(event) => {event.stopPropagation(); setDeletingConversation(conversation);}} style={local.historyDelete}><MaterialIcon color="#9a6b6b" name="delete_outline" size={19} /></Pressable>
-                  </Pressable>
+                    <Touchable accessibilityLabel="ลบแชท" hitSlop={8} onPress={(event) => {event.stopPropagation(); setDeletingConversation(conversation);}} style={local.historyDelete}><MaterialIcon color="#9a6b6b" name="delete_outline" size={19} /></Touchable>
+                  </Touchable>
                 ))}
                 {!chatHistory.length ? <View style={local.emptyHistory}><MaterialIcon color="#91a08d" name="history" size={34} /><Text style={local.modalOptionText}>ยังไม่มีแชทที่บันทึกไว้</Text></View> : null}
               </ScrollView>
@@ -2295,19 +2296,19 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
             <View style={local.modalHandle} />
             <View style={local.modalHeaderRow}>
               <View style={{flex: 1}}><Text style={local.modalTitle}>ตั้งค่าคำถามลัด OCR</Text><Text style={local.modalHint}>สร้างได้สูงสุด 4 รายการในหมวด OCR</Text></View>
-              <Pressable onPress={() => setOcrShortcutEditorOpen(false)} style={local.modalClose}><MaterialIcon color="#5d6658" name="close" size={20} /></Pressable>
+              <Touchable onPress={() => setOcrShortcutEditorOpen(false)} style={local.modalClose}><MaterialIcon color="#5d6658" name="close" size={20} /></Touchable>
             </View>
             <ScrollView contentContainerStyle={local.shortcutEditorList} keyboardShouldPersistTaps="handled">
               {ocrShortcutDrafts.map((shortcut, index) => (
                 <View key={`ocr-draft-${index}`} style={local.shortcutEditorCard}>
-                  <View style={local.shortcutEditorHeader}><Text style={local.shortcutEditorNumber}>คำถามลัด {index + 1}</Text><Pressable onPress={() => setOcrShortcutDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index))}><MaterialIcon color="#9a6b6b" name="delete_outline" size={19} /></Pressable></View>
+                  <View style={local.shortcutEditorHeader}><Text style={local.shortcutEditorNumber}>คำถามลัด {index + 1}</Text><Touchable onPress={() => setOcrShortcutDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index))}><MaterialIcon color="#9a6b6b" name="delete_outline" size={19} /></Touchable></View>
                   <TextInput maxLength={40} onChangeText={(title) => setOcrShortcutDrafts((current) => current.map((item, itemIndex) => itemIndex === index ? {...item, title} : item))} placeholder="ชื่อปุ่ม เช่น ตรวจวันและปี" placeholderTextColor="#929b8f" style={local.shortcutEditorInput} value={shortcut.title} />
                   <TextInput maxLength={240} multiline onChangeText={(prompt) => setOcrShortcutDrafts((current) => current.map((item, itemIndex) => itemIndex === index ? {...item, prompt} : item))} placeholder="คำถามที่จะส่งให้ AI" placeholderTextColor="#929b8f" style={[local.shortcutEditorInput, local.shortcutEditorPrompt]} value={shortcut.prompt} />
                 </View>
               ))}
-              {ocrShortcutDrafts.length < 4 ? <Pressable onPress={() => setOcrShortcutDrafts((current) => [...current, {detail: '', icon: 'document_scanner', prompt: '', title: ''}])} style={local.addShortcutButton}><MaterialIcon color="#5d8059" name="add" size={19} /><Text style={local.addShortcutText}>เพิ่มคำถามลัด</Text></Pressable> : null}
+              {ocrShortcutDrafts.length < 4 ? <Touchable onPress={() => setOcrShortcutDrafts((current) => [...current, {detail: '', icon: 'document_scanner', prompt: '', title: ''}])} style={local.addShortcutButton}><MaterialIcon color="#5d8059" name="add" size={19} /><Text style={local.addShortcutText}>เพิ่มคำถามลัด</Text></Touchable> : null}
             </ScrollView>
-            <Pressable onPress={saveOcrShortcutEditor} style={local.saveShortcutButton}><MaterialIcon color="#fff" name="check" size={19} /><Text style={local.quickAddCreateText}>บันทึกคำถามลัด</Text></Pressable>
+            <Touchable onPress={saveOcrShortcutEditor} style={local.saveShortcutButton}><MaterialIcon color="#fff" name="check" size={19} /><Text style={local.quickAddCreateText}>บันทึกคำถามลัด</Text></Touchable>
           </Pressable>
         </Pressable>
       </Modal>

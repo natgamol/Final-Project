@@ -90,3 +90,7 @@ scripts/*.png
 diff_*.txt
 .codex-runtime/
 Claude outputs/
+
+# Local-only notes (may hold App Check debug tokens) and verify output
+docs/LOCAL-*.md
+verify-before-demo.log

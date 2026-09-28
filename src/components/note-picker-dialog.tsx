@@ -1,5 +1,6 @@
 import {useMemo, useState} from 'react';
 import {Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {MaterialIcon} from '@/screens/native/user/user-ui';
 import type {Note, WithId} from '@/types/smartlife';
@@ -56,7 +57,7 @@ export default function NotePickerDialog({
 
         <ScrollView style={styles.list}>
           {matches.length ? matches.map((note) => (
-            <Pressable
+            <Touchable
               accessibilityLabel={`เชื่อมกับ ${String(note.title ?? '')}`}
               accessibilityRole="button"
               key={note.id}
@@ -69,13 +70,13 @@ export default function NotePickerDialog({
                 <Text numberOfLines={1} style={styles.rowSub}>{String(note.content ?? '')}</Text>
               </View>
               <MaterialIcon color="#a8b0a6" name="add_link" size={18} />
-            </Pressable>
+            </Touchable>
           )) : <Text style={styles.empty}>{notes.length <= 1 ? 'ยังไม่มีโน้ตอื่นให้เชื่อม' : 'ไม่พบโน้ตที่ตรงกับคำค้นหา'}</Text>}
         </ScrollView>
 
-        <Pressable accessibilityLabel="ยกเลิก" accessibilityRole="button" onPress={onCancel} style={styles.cancel}>
+        <Touchable accessibilityLabel="ยกเลิก" accessibilityRole="button" onPress={onCancel} style={styles.cancel}>
           <Text style={styles.cancelText}>ยกเลิก</Text>
-        </Pressable>
+        </Touchable>
       </View>
     </Pressable>
   </Modal>;

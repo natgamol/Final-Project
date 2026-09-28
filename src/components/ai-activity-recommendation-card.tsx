@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
-import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {getGroundedAcademicSuggestions, recommendationLevel, type ActivitySuggestion} from '@/services/smartlife-recommendations';
 import {useCurrentClock} from '@/hooks/use-current-clock';
@@ -26,7 +27,7 @@ export default function AiActivityRecommendationCard({onNavigate, uid}: Props) {
   if (!loading && suggestion && !futureSuggestion(suggestion, now)) return (
     <View style={styles.card}>
       <Text style={styles.detail}>ช่วงเวลาที่แนะนำผ่านไปแล้ว เปิดคำแนะนำกิจกรรมเพื่อคำนวณช่วงว่างใหม่</Text>
-      <Pressable accessibilityLabel="คำนวณช่วงว่างใหม่" onPress={() => onNavigate('smartlife_add_activity')} style={styles.action}><MaterialIcon color="#fff" name="refresh" size={18} /></Pressable>
+      <Touchable accessibilityLabel="คำนวณช่วงว่างใหม่" onPress={() => onNavigate('smartlife_add_activity')} style={styles.action}><MaterialIcon color="#fff" name="refresh" size={18} /></Touchable>
     </View>
   );
 
@@ -41,7 +42,7 @@ export default function AiActivityRecommendationCard({onNavigate, uid}: Props) {
           <View style={styles.meta}><Text style={styles.badge}>{recommendationLevel(suggestion.score)}</Text><Text numberOfLines={1} style={styles.reason}>{suggestion.reasons[0] ?? 'อิงจากข้อมูลจริงของคุณ'}</Text></View>
         </> : null}
       </View>
-      <Pressable accessibilityLabel="เปิดคำแนะนำกิจกรรม" onPress={() => onNavigate('smartlife_add_activity')} style={({pressed}) => [styles.action, pressed && styles.pressed]}><MaterialIcon color="#fff" name="arrow_forward" size={18} /></Pressable>
+      <Touchable accessibilityLabel="เปิดคำแนะนำกิจกรรม" onPress={() => onNavigate('smartlife_add_activity')} style={({pressed}) => [styles.action, pressed && styles.pressed]}><MaterialIcon color="#fff" name="arrow_forward" size={18} /></Touchable>
     </View>
   );
 }

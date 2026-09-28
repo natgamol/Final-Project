@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
@@ -70,7 +71,7 @@ function AdminTabs({active, onNavigate}: {active: string; onNavigate: (page: str
       {TABS.map(([icon, label, target], index) => {
         const selected = active === target || (target === 'admin_more' && MORE_PAGES.includes(active));
         return (
-          <Pressable
+          <Touchable
             accessibilityLabel={label || 'เมนูผู้ดูแล'}
             key={target}
             onPress={() => onNavigate(target)}
@@ -86,7 +87,7 @@ function AdminTabs({active, onNavigate}: {active: string; onNavigate: (page: str
                 <Text style={[styles.tabText, selected && styles.tabTextActive]}>{label}</Text>
               </>
             )}
-          </Pressable>
+          </Touchable>
         );
       })}
     </LinearGradient>
@@ -189,26 +190,26 @@ export default function AdminPortal({onLogout, onNavigate, page, uid}: Props) {
           {page === 'admin_dashboard' ? (
             <View style={styles.headerAvatar}><Text style={styles.headerAvatarText}>SL</Text></View>
           ) : (
-            <Pressable
+            <Touchable
               accessibilityLabel="กลับหน้าภาพรวม"
               onPress={() => onNavigate('admin_dashboard')}
               style={({pressed}) => [styles.headerBack, pressed && styles.pressed]}
             >
               <MaterialIcon color={C.pine} name="chevron_left" size={25} />
-            </Pressable>
+            </Touchable>
           )}
           <View style={styles.headerCopy}>
             <Text style={styles.headerBrand}>SmartLife Admin</Text>
             <Text style={styles.adminTitle}>{page === 'admin_dashboard' ? 'ผู้ดูแลระบบ' : info[0]}</Text>
           </View>
-          <Pressable
+          <Touchable
             accessibilityLabel="ออกจากระบบ"
             accessibilityRole="button"
             onPress={logout}
             style={({pressed}) => [styles.logoutButton, pressed && styles.pressed]}
           >
             <MaterialIcon color={C.red} name="logout" size={21} />
-          </Pressable>
+          </Touchable>
         </LinearGradient>
 
         <ScrollView
@@ -242,14 +243,14 @@ export default function AdminPortal({onLogout, onNavigate, page, uid}: Props) {
                 </View>
               ) : null}
               <View style={styles.logoutActions}>
-                <Pressable
+                <Touchable
                   disabled={loggingOut}
                   onPress={() => setLogoutOpen(false)}
                   style={({pressed}) => [styles.cancelLogout, pressed && styles.pressed, loggingOut && styles.disabled]}
                 >
                   <Text style={styles.cancelLogoutText}>ยกเลิก</Text>
-                </Pressable>
-                <Pressable
+                </Touchable>
+                <Touchable
                   disabled={loggingOut}
                   onPress={confirmLogout}
                   style={({pressed}) => [styles.confirmLogout, pressed && styles.pressed, loggingOut && styles.disabled]}
@@ -259,7 +260,7 @@ export default function AdminPortal({onLogout, onNavigate, page, uid}: Props) {
                   ) : (
                     <><MaterialIcon color="#fff" name="logout" size={17} /><Text style={styles.confirmLogoutText}>ออกจากระบบ</Text></>
                   )}
-                </Pressable>
+                </Touchable>
               </View>
             </View>
           </View>

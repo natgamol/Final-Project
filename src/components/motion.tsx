@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState, type ReactNode} from 'react';
-import {AccessibilityInfo, Text, type StyleProp, type TextProps, type TextStyle, type ViewStyle} from 'react-native';
+import {AccessibilityInfo, Platform, Text, type StyleProp, type TextProps, type TextStyle, type ViewStyle} from 'react-native';
 import Animated, {Easing, FadeIn, FadeInDown, ReduceMotion} from 'react-native-reanimated';
 
 /**
@@ -11,7 +11,11 @@ import Animated, {Easing, FadeIn, FadeInDown, ReduceMotion} from 'react-native-r
  */
 export function Reveal({children, index = 0, slide = true, style}: {children: ReactNode; index?: number; slide?: boolean; style?: StyleProp<ViewStyle>}) {
   const enter = slide ? FadeInDown : FadeIn;
-  const entering = enter.delay(Math.min(index * 70, 420)).duration(420).easing(Easing.out(Easing.cubic)).reduceMotion(ReduceMotion.System);
+  const timed = enter.delay(Math.min(index * 70, 420)).duration(420);
+  // react-native-web cannot run custom easing curves for layout animations; it
+  // logs a warning and falls back to linear, which looks mechanical. Its own
+  // default curve is the smoother choice there.
+  const entering = (Platform.OS === 'web' ? timed : timed.easing(Easing.out(Easing.cubic))).reduceMotion(ReduceMotion.System);
   return <Animated.View entering={entering} style={style}>{children}</Animated.View>;
 }
 

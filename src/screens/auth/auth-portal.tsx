@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
 
@@ -18,7 +19,7 @@ const C = {pine: '#2c341b', green: '#688a65', greenDark: '#4e704a', olivine: '#9
 const F = {r: 'Prompt_400Regular', m: 'Prompt_500Medium', s: 'Prompt_600SemiBold', b: 'Prompt_700Bold', x: 'Prompt_800ExtraBold'};
 
 function Field({icon, label, placeholder, value, onChangeText, secure, onToggle, keyboardType = 'default'}: {icon: string; label: string; placeholder: string; value: string; onChangeText: (value: string) => void; secure?: boolean; onToggle?: () => void; keyboardType?: 'default' | 'email-address'}) {
-  return <View style={styles.fieldGroup}><Text style={styles.label}>{label}</Text><View style={styles.inputShell}><MaterialIcon color="#9aa394" name={icon} size={19} /><TextInput autoCapitalize="none" keyboardType={keyboardType} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="#aeb5aa" secureTextEntry={secure} style={styles.input} value={value} />{onToggle ? <Pressable hitSlop={10} onPress={onToggle}><MaterialIcon color="#9aa394" name={secure ? 'visibility_off' : 'visibility'} size={19} /></Pressable> : null}</View></View>;
+  return <View style={styles.fieldGroup}><Text style={styles.label}>{label}</Text><View style={styles.inputShell}><MaterialIcon color="#9aa394" name={icon} size={19} /><TextInput autoCapitalize="none" keyboardType={keyboardType} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="#aeb5aa" secureTextEntry={secure} style={styles.input} value={value} />{onToggle ? <Touchable hitSlop={10} onPress={onToggle}><MaterialIcon color="#9aa394" name={secure ? 'visibility_off' : 'visibility'} size={19} /></Touchable> : null}</View></View>;
 }
 
 export default function AuthPortal({mode, onFacebook, onGoogle, onSubmit, onSwitch}: AuthPortalProps) {
@@ -80,20 +81,20 @@ export default function AuthPortal({mode, onFacebook, onGoogle, onSubmit, onSwit
         {registering ? <Field icon="badge" label="ชื่อ - นามสกุล" onChangeText={setDisplayName} placeholder="สมชาย ใจดี" value={displayName} /> : null}
         <Field icon={registering ? 'mail' : 'person'} keyboardType="email-address" label={registering ? 'รหัสนักศึกษา หรือ อีเมล' : 'ชื่อผู้ใช้ หรือ อีเมล'} onChangeText={setEmail} placeholder={registering ? 'B67xxxxx / email@sut.ac.th' : 'สมชาย หรือ name@example.com'} value={email} />
         <Field icon="lock" label="รหัสผ่าน" onChangeText={setPassword} onToggle={() => setShowPassword((value) => !value)} placeholder="••••••••" secure={!showPassword} value={password} />
-        {registering ? <Field icon="verified" label="ยืนยันรหัสผ่าน" onChangeText={setConfirmPassword} placeholder="••••••••" secure={!showPassword} value={confirmPassword} /> : <Pressable disabled={busy} onPress={resetPassword} style={styles.forgot}><Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text></Pressable>}
+        {registering ? <Field icon="verified" label="ยืนยันรหัสผ่าน" onChangeText={setConfirmPassword} placeholder="••••••••" secure={!showPassword} value={confirmPassword} /> : <Touchable disabled={busy} onPress={resetPassword} style={styles.forgot}><Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text></Touchable>}
 
-        {registering ? <Pressable onPress={() => setAccepted((value) => !value)} style={styles.terms}><View style={[styles.checkbox, accepted && styles.checkboxActive]}>{accepted ? <MaterialIcon color="#fff" name="check" size={14} /> : null}</View><Text style={styles.termsText}>ฉันยอมรับ <Text style={styles.termsLink}>ข้อตกลงและเงื่อนไข</Text> และ <Text style={styles.termsLink}>นโยบายความเป็นส่วนตัว</Text></Text></Pressable> : null}
+        {registering ? <Touchable onPress={() => setAccepted((value) => !value)} style={styles.terms}><View style={[styles.checkbox, accepted && styles.checkboxActive]}>{accepted ? <MaterialIcon color="#fff" name="check" size={14} /> : null}</View><Text style={styles.termsText}>ฉันยอมรับ <Text style={styles.termsLink}>ข้อตกลงและเงื่อนไข</Text> และ <Text style={styles.termsLink}>นโยบายความเป็นส่วนตัว</Text></Text></Touchable> : null}
         {message ? <View style={styles.message}><MaterialIcon color={message.includes('แล้ว') ? C.green : '#bd625b'} name={message.includes('แล้ว') ? 'check_circle' : 'error'} size={17} /><Text style={styles.messageText}>{message}</Text></View> : null}
 
-        <Pressable disabled={busy} onPress={submit} style={({pressed}) => [styles.primaryShell, pressed && styles.pressed, busy && styles.disabled]}><LinearGradient colors={['#789a75', '#4b7047']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.primary}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{registering ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}</Text>}</LinearGradient></Pressable>
+        <Touchable disabled={busy} onPress={submit} style={({pressed}) => [styles.primaryShell, pressed && styles.pressed, busy && styles.disabled]}><LinearGradient colors={['#789a75', '#4b7047']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.primary}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>{registering ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}</Text>}</LinearGradient></Touchable>
 
         <View style={styles.divider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>{registering ? 'หรือสมัครผ่าน' : 'หรือเข้าสู่ระบบด้วย'}</Text><View style={styles.dividerLine} /></View>
         <View style={styles.socials}>
-          <Pressable accessibilityLabel="เข้าสู่ระบบด้วย Google" accessibilityRole="button" disabled={busy} onPress={googleLogin} style={({pressed}) => [styles.google, pressed && !busy && styles.pressed, busy && styles.disabled]}>{socialBusy === 'google' ? <ActivityIndicator color="#4285f4" size="small" /> : <Text style={styles.googleMark}>G</Text>}<Text style={styles.googleText}>{socialBusy === 'google' ? 'กำลังเชื่อมต่อ...' : 'Google'}</Text></Pressable>
-          <Pressable accessibilityLabel="เข้าสู่ระบบด้วย Facebook" accessibilityRole="button" disabled={busy} onPress={facebookLogin} style={({pressed}) => [styles.facebook, pressed && !busy && styles.pressed, busy && styles.disabled]}>{socialBusy === 'facebook' ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.facebookMark}>f</Text>}<Text style={styles.facebookText}>{socialBusy === 'facebook' ? 'กำลังเชื่อมต่อ...' : 'Facebook'}</Text></Pressable>
+          <Touchable accessibilityLabel="เข้าสู่ระบบด้วย Google" accessibilityRole="button" disabled={busy} onPress={googleLogin} style={({pressed}) => [styles.google, pressed && !busy && styles.pressed, busy && styles.disabled]}>{socialBusy === 'google' ? <ActivityIndicator color="#4285f4" size="small" /> : <Text style={styles.googleMark}>G</Text>}<Text style={styles.googleText}>{socialBusy === 'google' ? 'กำลังเชื่อมต่อ...' : 'Google'}</Text></Touchable>
+          <Touchable accessibilityLabel="เข้าสู่ระบบด้วย Facebook" accessibilityRole="button" disabled={busy} onPress={facebookLogin} style={({pressed}) => [styles.facebook, pressed && !busy && styles.pressed, busy && styles.disabled]}>{socialBusy === 'facebook' ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.facebookMark}>f</Text>}<Text style={styles.facebookText}>{socialBusy === 'facebook' ? 'กำลังเชื่อมต่อ...' : 'Facebook'}</Text></Touchable>
         </View>
 
-        <Pressable onPress={() => onSwitch(registering ? 'login' : 'register')} style={styles.switch}><Text style={styles.switchMuted}>{registering ? 'มีบัญชีอยู่แล้วใช่ไหม? ' : 'ยังไม่มีบัญชีใช่ไหม? '}<Text style={styles.switchLink}>{registering ? 'เข้าสู่ระบบ' : 'ลงทะเบียนเลย'}</Text></Text></Pressable>
+        <Touchable onPress={() => onSwitch(registering ? 'login' : 'register')} style={styles.switch}><Text style={styles.switchMuted}>{registering ? 'มีบัญชีอยู่แล้วใช่ไหม? ' : 'ยังไม่มีบัญชีใช่ไหม? '}<Text style={styles.switchLink}>{registering ? 'เข้าสู่ระบบ' : 'ลงทะเบียนเลย'}</Text></Text></Touchable>
       </LinearGradient>
     </ScrollView>
   </KeyboardAvoidingView></ResponsiveSafeArea>;

@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, Pressable, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 
 import {AsyncActionOverlay, type AsyncActionStatus} from '@/components/async-action-ui';
 import NativeDateTimePicker from '@/components/date-time-picker';
@@ -229,31 +230,31 @@ export default function SleepLogCard({onLogged, uid, variant = 'full'}: {
         </Text>
       </View> : null}
       <View style={styles.actions}>
-        <Pressable accessibilityLabel="บันทึกเวลาเข้านอน" disabled={busy || Boolean(openNight)} onPress={goToBed} style={({pressed}) => [styles.action, styles.bed, pressed && styles.pressed, (busy || Boolean(openNight)) && styles.disabled]}>
+        <Touchable accessibilityLabel="บันทึกเวลาเข้านอน" disabled={busy || Boolean(openNight)} onPress={goToBed} style={({pressed}) => [styles.action, styles.bed, pressed && styles.pressed, (busy || Boolean(openNight)) && styles.disabled]}>
           <MaterialIcon color={C.night} name="bedtime" size={17} />
           <Text style={[styles.actionText, {color: C.night}]}>เข้านอน</Text>
-        </Pressable>
-        <Pressable accessibilityLabel="บันทึกเวลาตื่นนอน" disabled={busy || !openNight} onPress={wakeUp} style={({pressed}) => [styles.action, styles.wake, pressed && styles.pressed, (busy || !openNight) && styles.disabled]}>
+        </Touchable>
+        <Touchable accessibilityLabel="บันทึกเวลาตื่นนอน" disabled={busy || !openNight} onPress={wakeUp} style={({pressed}) => [styles.action, styles.wake, pressed && styles.pressed, (busy || !openNight) && styles.disabled]}>
           <MaterialIcon color={C.dark} name="wb_sunny" size={17} />
           <Text style={[styles.actionText, {color: C.dark}]}>ตื่นนอน</Text>
-        </Pressable>
+        </Touchable>
       </View>
     </> : null}
 
     {showBaseline ? <View style={showLog ? styles.baselineBlock : undefined}>
       <View style={styles.baselineHead}>
         <Text style={styles.baselineLabel}>ช่วงนอนปกติ (ค่าอ้างอิง)</Text>
-        {baseline && !editing ? <Pressable onPress={() => setEditing(true)} style={({pressed}) => [pressed && styles.pressed]}><Text style={styles.link}>แก้ไข</Text></Pressable> : null}
+        {baseline && !editing ? <Touchable onPress={() => setEditing(true)} style={({pressed}) => [pressed && styles.pressed]}><Text style={styles.link}>แก้ไข</Text></Touchable> : null}
       </View>
       {baseline && !editing ? <>
         <Text style={styles.baselineValue}>{formatClockMinutes(baseline.bedtimeMinutes)} - {formatClockMinutes(baseline.wakeMinutes)} น. ({baselineHours} ชั่วโมง)</Text>
         <Text style={styles.baselineNote}>เป็นค่าที่ตั้งเอง ไม่ใช่การนอนที่วัดได้ ระบบจะใช้ก็ต่อเมื่อคืนนั้นไม่มีบันทึกจริง และจะไม่ทำให้ระดับความครบของหลักฐานขึ้นเป็น &quot;ค่อนข้างครบ&quot;</Text>
-        <Pressable disabled={busy} onPress={removeBaseline} style={({pressed}) => [pressed && styles.pressed]}><Text style={styles.clearLink}>ล้างค่าอ้างอิงนี้</Text></Pressable>
+        <Touchable disabled={busy} onPress={removeBaseline} style={({pressed}) => [pressed && styles.pressed]}><Text style={styles.clearLink}>ล้างค่าอ้างอิงนี้</Text></Touchable>
       </> : <>
         <View style={styles.fields}>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>เข้านอน</Text>
-            <Pressable
+            <Touchable
               accessibilityLabel={`เลือกเวลาเข้านอน ปัจจุบัน ${bedtimeText} น.`}
               accessibilityRole="button"
               disabled={busy}
@@ -262,11 +263,11 @@ export default function SleepLogCard({onLogged, uid, variant = 'full'}: {
               <MaterialIcon color={C.night} name="bedtime" size={16} />
               <Text style={styles.timePickerValue}>{bedtimeText}</Text>
               <MaterialIcon color={C.muted} name="expand_more" size={18} />
-            </Pressable>
+            </Touchable>
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>ตื่นนอน</Text>
-            <Pressable
+            <Touchable
               accessibilityLabel={`เลือกเวลาตื่นนอน ปัจจุบัน ${wakeText} น.`}
               accessibilityRole="button"
               disabled={busy}
@@ -275,7 +276,7 @@ export default function SleepLogCard({onLogged, uid, variant = 'full'}: {
               <MaterialIcon color={C.sage} name="wb_sunny" size={16} />
               <Text style={styles.timePickerValue}>{wakeText}</Text>
               <MaterialIcon color={C.muted} name="expand_more" size={18} />
-            </Pressable>
+            </Touchable>
           </View>
         </View>
         {timePickerTarget ? <NativeDateTimePicker
@@ -288,9 +289,9 @@ export default function SleepLogCard({onLogged, uid, variant = 'full'}: {
           value={pickerValue(timePickerTarget === 'bedtime' ? bedtimeText : wakeText)}
         /> : null}
         <Text style={styles.baselineNote}>{draftHours === null ? 'เลือกเวลาให้ได้ช่วงนอนยาว 2-14 ชั่วโมง' : `ได้ช่วงนอน ${draftHours} ชั่วโมงต่อคืน`}</Text>
-        <Pressable disabled={busy} onPress={saveBaseline} style={({pressed}) => [styles.save, pressed && styles.pressed, busy && styles.disabled]}>
+        <Touchable disabled={busy} onPress={saveBaseline} style={({pressed}) => [styles.save, pressed && styles.pressed, busy && styles.disabled]}>
           <Text style={styles.saveText}>{busy ? 'กำลังบันทึก...' : 'บันทึกช่วงนอนปกติ'}</Text>
-        </Pressable>
+        </Touchable>
       </>}
     </View> : null}
 

@@ -1,8 +1,12 @@
-import {useState, type ReactNode} from 'react';
-import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Children, isValidElement, useEffect, useState, type ReactNode} from 'react';
+import {ActivityIndicator, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
 import {AddItemSheet} from '@/components/add-item-sheet';
 import {LinearGradient} from 'expo-linear-gradient';
+import Animated, {ReduceMotion, useAnimatedStyle, useSharedValue, withSpring} from 'react-native-reanimated';
+import {Reveal} from '@/components/motion';
+import {BackdropGlow, pulseRingStyle, Sheen} from '@/components/color-motion';
 
 export type UserNavigate = (page: string) => void;
 
@@ -11,16 +15,28 @@ export function MaterialIcon({name, color = '#2c341b', size = 22}: {name: string
 }
 
 export function UserGradientBackdrop() {
-  return <LinearGradient colors={['#fbfcf8', '#f0f3eb', '#e7ece1']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={StyleSheet.absoluteFill} />;
+  // A lavender-tinted layer (the finance palette's soft tone) breathes in and
+  // out over the page on web, so the background slowly shifts colour.
+  return <><LinearGradient colors={['#fbfcf8', '#f0f3eb', '#e7ece1']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={StyleSheet.absoluteFill} /><BackdropGlow colors={['#f3f4fa', '#eceef7', '#eef2ea']} /></>;
 }
 
 export function UserShell({children, active, edgeToEdge = false, onNavigate, scroll = true}: {children: ReactNode; active?: string; edgeToEdge?: boolean; onNavigate: UserNavigate; scroll?: boolean}) {
-  const body = <View style={[styles.body, edgeToEdge && styles.bodyEdge]}>{children}</View>;
+  // On scrolling screens each top-level section fades in one after another, so a
+  // page assembles top to bottom instead of popping in all at once. Fade only, no
+  // slide: the guided tour measures some of these sections while they appear.
+  // The key includes the element type, so content that replaces a loading block
+  // gets its own entrance instead of silently swapping in.
+  const content = scroll ? Children.toArray(children).map((child, index) => {
+    const type = isValidElement(child) ? (typeof child.type === 'string' ? child.type : (child.type as {displayName?: string; name?: string}).displayName ?? (child.type as {name?: string}).name ?? 'el') : 'text';
+    const key = `${isValidElement(child) ? String(child.key) : index}-${type}`;
+    return <Reveal index={index} key={key} slide={false}>{child}</Reveal>;
+  }) : children;
+  const body = <View style={[styles.body, edgeToEdge && styles.bodyEdge]}>{content}</View>;
   return <ResponsiveSafeArea style={[styles.safe, edgeToEdge && styles.flatSurface]}><View style={[styles.shell, edgeToEdge && styles.flatSurface]}>{edgeToEdge ? null : <UserGradientBackdrop />}{scroll ? <ScrollView contentContainerStyle={styles.scroll} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">{body}</ScrollView> : body}<UserTabBar active={active} onNavigate={onNavigate} /></View></ResponsiveSafeArea>;
 }
 
 export function UserHeader({title, subtitle, right, onNavigate}: {title: string; subtitle?: string; right?: ReactNode; onNavigate: UserNavigate}) {
-  return <LinearGradient colors={['rgba(255,255,255,.98)', 'rgba(240,245,236,.94)']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.header}><View><Text style={styles.brand}>SmartLife</Text><Text style={styles.title}>{title}</Text>{subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}</View>{right ?? <Pressable onPress={() => onNavigate('smartlife_profile')} style={styles.avatar}><Text style={styles.avatarText}>SL</Text></Pressable>}</LinearGradient>;
+  return <LinearGradient colors={['rgba(255,255,255,.98)', 'rgba(240,245,236,.94)']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.header}><View><Text style={styles.brand}>SmartLife</Text><Text style={styles.title}>{title}</Text>{subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}</View>{right ?? <Touchable onPress={() => onNavigate('smartlife_profile')} style={styles.avatar}><Text style={styles.avatarText}>SL</Text></Touchable>}</LinearGradient>;
 }
 
 export function Card({children, style, colors = ['rgba(255,255,255,.98)', '#f8faf5']}: {children: ReactNode; style?: object; colors?: readonly [string, string, ...string[]]}) {
@@ -28,7 +44,7 @@ export function Card({children, style, colors = ['rgba(255,255,255,.98)', '#f8fa
 }
 
 export function PrimaryButton({label, onPress, disabled = false}: {label: string; onPress: () => void; disabled?: boolean}) {
-  return <Pressable disabled={disabled} onPress={onPress} style={[styles.primary, disabled && styles.disabled]}><LinearGradient colors={['#789a75', '#4d7148']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.primaryGradient}><Text style={styles.primaryText}>{label}</Text></LinearGradient></Pressable>;
+  return <Touchable disabled={disabled} onPress={onPress} style={[styles.primary, disabled && styles.disabled]}><LinearGradient colors={['#789a75', '#4d7148']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.primaryGradient}>{disabled ? null : <Sheen radius={14} />}<Text style={styles.primaryText}>{label}</Text></LinearGradient></Touchable>;
 }
 
 export function LoadingBlock({label = 'กำลังโหลดข้อมูลจาก Firebase'}: {label?: string}) {
@@ -49,7 +65,7 @@ export function LegacyUserTabBar({active, onNavigate}: {active?: string; onNavig
     ['person', 'โปรไฟล์', 'smartlife_profile'],
   ];
   const widths = ['20%', '20%', '20%', '13.333%', '13.333%', '13.334%'] as const;
-  return <LinearGradient colors={['rgba(255,255,255,.99)', '#f7f9f4']} end={{x: 1, y: 0}} start={{x: 0, y: 0}} style={styles.tabs}>{tabs.map(([icon, label, page], index) => <Pressable key={page} onPress={() => onNavigate(page)} style={({pressed}) => [styles.tab, {width: widths[index]}, pressed && styles.tabPressed]}>{index === 2 ? <LinearGradient colors={['#71936e', '#3f633a']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.plus}><MaterialIcon color="#fff" name="add" size={31} /></LinearGradient> : <><MaterialIcon color={active === page ? '#5f835f' : '#9ea59b'} name={icon} size={20} /><Text numberOfLines={1} style={[styles.tabLabel, active === page && styles.active]}>{label}</Text></>}</Pressable>)}</LinearGradient>;
+  return <LinearGradient colors={['rgba(255,255,255,.99)', '#f7f9f4']} end={{x: 1, y: 0}} start={{x: 0, y: 0}} style={styles.tabs}>{tabs.map(([icon, label, page], index) => <Touchable key={page} onPress={() => onNavigate(page)} style={({pressed}) => [styles.tab, {width: widths[index]}, pressed && styles.tabPressed]}>{index === 2 ? <LinearGradient colors={['#71936e', '#3f633a']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={[styles.plus, pulseRingStyle]}><MaterialIcon color="#fff" name="add" size={31} /></LinearGradient> : <><TabIcon active={active === page} icon={icon} /><Text numberOfLines={1} style={[styles.tabLabel, active === page && styles.active]}>{label}</Text></>}</Touchable>)}</LinearGradient>;
 }
 
 // Exported so anything that needs to show the real tab bar layout -- the
@@ -59,17 +75,38 @@ export const USER_LEFT_TABS = [['home', 'หน้าหลัก', 'index'], ['
 export const USER_RIGHT_TABS = [['account_balance_wallet', 'การเงิน', 'smartlife_finance_day'], ['person', 'โปรไฟล์', 'smartlife_profile']];
 
 // Added for Merged Planner: a symmetrical 2-1-2 navigation with a central OCR scanner.
+// The current tab's icon springs up into place when its screen opens, so the
+// bar confirms where you landed. Colours are exactly the ones the bar used before.
+function TabIcon({active, icon}: {active: boolean; icon: string}) {
+  const scale = useSharedValue(active ? 0.55 : 1);
+  useEffect(() => {
+    scale.set(withSpring(1, {damping: 9, mass: 0.7, reduceMotion: ReduceMotion.System, stiffness: 190}));
+  }, [active, scale]);
+  const style = useAnimatedStyle(() => ({transform: [{scale: scale.get()}]}));
+  return <Animated.View style={style}><MaterialIcon color={active ? '#5f835f' : '#9ea59b'} name={icon} size={20} /></Animated.View>;
+}
+
+// A short bar in the tab's own active green grows out under the current tab.
+function TabIndicator({active}: {active: boolean}) {
+  const grow = useSharedValue(0);
+  useEffect(() => {
+    grow.set(withSpring(active ? 1 : 0, {damping: 12, mass: 0.6, reduceMotion: ReduceMotion.System, stiffness: 160}));
+  }, [active, grow]);
+  const style = useAnimatedStyle(() => ({opacity: grow.get(), transform: [{scaleX: grow.get()}]}));
+  return <Animated.View style={[styles.tabIndicator, style]} />;
+}
+
 export function UserTabBar({active, onNavigate}: {active?: string; onNavigate: UserNavigate}) {
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
   const leftTabs = USER_LEFT_TABS;
   const rightTabs = USER_RIGHT_TABS;
   const openForm = (page: string) => { setIsBottomSheetOpen(false); onNavigate(page); };
-  const renderTab = ([icon, label, page]: string[]) => <Pressable key={page} onPress={() => onNavigate(page)} style={({pressed}) => [styles.tab, pressed && styles.tabPressed]}><MaterialIcon color={active === page ? '#5f835f' : '#9ea59b'} name={icon} size={20} /><Text numberOfLines={1} style={[styles.tabLabel, active === page && styles.active]}>{label}</Text></Pressable>;
+  const renderTab = ([icon, label, page]: string[]) => <Touchable key={page} onPress={() => onNavigate(page)} style={({pressed}) => [styles.tab, pressed && styles.tabPressed]}><TabIcon active={active === page} icon={icon} /><Text numberOfLines={1} style={[styles.tabLabel, active === page && styles.active]}>{label}</Text><TabIndicator active={active === page} /></Touchable>;
   return <>
     <LinearGradient colors={['rgba(255,255,255,.99)', '#f7f9f4']} end={{x: 1, y: 0}} start={{x: 0, y: 0}} style={styles.tabs}>
       {leftTabs.map(renderTab)}
       {/* The centre action opens a clear add menu so users do not have to guess which screen to use. */}
-      <Pressable accessibilityLabel="เปิดเมนูเพิ่มข้อมูล" onPress={() => setIsBottomSheetOpen(true)} style={({pressed}) => [styles.tab, pressed && styles.tabPressed]}><LinearGradient colors={['#71936e', '#3f633a']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.plus}><MaterialIcon color="#fff" name="add" size={31} /></LinearGradient></Pressable>
+      <Touchable accessibilityLabel="เปิดเมนูเพิ่มข้อมูล" onPress={() => setIsBottomSheetOpen(true)} style={({pressed}) => [styles.tab, pressed && styles.tabPressed]}><LinearGradient colors={['#71936e', '#3f633a']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={[styles.plus, pulseRingStyle]}><MaterialIcon color="#fff" name="add" size={31} /></LinearGradient></Touchable>
       {rightTabs.map(renderTab)}
     </LinearGradient>
     <AddItemSheet onClose={() => setIsBottomSheetOpen(false)} onNavigate={openForm} visible={isBottomSheetOpen} />
@@ -120,6 +157,7 @@ const styles = StyleSheet.create({
   shell: {backgroundColor: '#f0f2ec', flex: 1},
   subtitle: {color: '#84907f', fontFamily: 'Prompt_400Regular', fontSize: 12, marginTop: 3},
   tab: {alignItems: 'center', flex: 1, justifyContent: 'center'},
+  tabIndicator: {backgroundColor: '#5f835f', borderRadius: 2, height: 3, marginTop: 4, width: 18},
   tabLabel: {color: '#9aa39a', fontFamily: 'Prompt_500Medium', fontSize: 12, marginTop: 4, textAlign: 'center'},
   tabPressed: {opacity: .65, transform: [{translateY: -1}]},
   tabs: {alignItems: 'center', borderTopColor: '#e2e6df', borderTopWidth: 1, boxShadow: '0 -8px 18px rgba(44, 52, 27, 0.07)', flexDirection: 'row', height: 78, paddingHorizontal: 0},

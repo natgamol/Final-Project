@@ -1,5 +1,6 @@
 import {useCallback, useMemo, useState} from 'react';
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
+import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
 
 import {
@@ -123,24 +124,24 @@ export default function AdminFinanceView() {
         <>
           <AdminCard>
             <View style={local.monthBar}>
-              <Pressable
+              <Touchable
                 accessibilityLabel="เดือนก่อนหน้า"
                 onPress={() => setMonthKey(shiftMonth(monthKey, -1))}
                 style={({pressed}) => [local.monthNav, pressed && ui.pressed]}
               >
                 <MaterialIcon color={C.pine} name="chevron_left" size={22} />
-              </Pressable>
+              </Touchable>
               <View style={{alignItems: 'center', flex: 1}}>
                 <Text style={local.monthTitle}>{monthLabel(monthKey)}</Text>
                 <Text style={local.monthSub}>การเงินของ {userLabel(selected)}</Text>
               </View>
-              <Pressable
+              <Touchable
                 accessibilityLabel="เดือนถัดไป"
                 onPress={() => setMonthKey(shiftMonth(monthKey, 1))}
                 style={({pressed}) => [local.monthNav, pressed && ui.pressed]}
               >
                 <MaterialIcon color={C.pine} name="chevron_right" size={22} />
-              </Pressable>
+              </Touchable>
             </View>
             <View style={local.monthActions}>
               <SmallButton icon="today" label="เดือนปัจจุบัน" onPress={() => setMonthKey(monthKeyFromMillis(Date.now()))} tone="green" />
@@ -217,10 +218,10 @@ export default function AdminFinanceView() {
                   <StatTile label="ต้องตรวจสอบ" tone={scansNeedingReview ? 'amber' : 'green'} value={String(scansNeedingReview)} />
                 </View>
 
-                <Pressable onPress={() => setShowScans((value) => !value)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
+                <Touchable onPress={() => setShowScans((value) => !value)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
                   <MaterialIcon color={C.pine} name={showScans ? 'expand_less' : 'expand_more'} size={16} />
                   <Text style={ui.refreshButtonText}>{showScans ? 'ซ่อนประวัติการสแกน' : 'ดูประวัติการสแกน'}</Text>
-                </Pressable>
+                </Touchable>
 
                 {showScans ? (
                   monthScans.length ? monthScans.map((scan) => {
@@ -300,10 +301,10 @@ export default function AdminFinanceView() {
                 })}
 
                 {filtered.length > shown.length ? (
-                  <Pressable onPress={() => setVisible((current) => current + PAGE_SIZE)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
+                  <Touchable onPress={() => setVisible((current) => current + PAGE_SIZE)} style={({pressed}) => [ui.refreshButton, pressed && ui.pressed]}>
                     <MaterialIcon color={C.pine} name="expand_more" size={16} />
                     <Text style={ui.refreshButtonText}>ดูเพิ่มอีก {Math.min(PAGE_SIZE, filtered.length - shown.length)} รายการ</Text>
-                  </Pressable>
+                  </Touchable>
                 ) : null}
               </AdminCard>
             </>
