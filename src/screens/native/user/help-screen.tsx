@@ -14,7 +14,7 @@ const F = {r: 'Prompt_400Regular', m: 'Prompt_500Medium', s: 'Prompt_600SemiBold
 // do I press."
 function TapHere({label = 'กดตรงนี้'}: {label?: string}) {
   return <View style={visualStyles.tapHere}>
-    <MaterialIcon color={C.dark} name="arrow_upward" size={13} />
+    <MaterialIcon color={C.dark} name="arrow_downward" size={13} />
     <Text style={visualStyles.tapHereText}>{label}</Text>
   </View>;
 }
@@ -159,7 +159,9 @@ const SECTIONS: Section[] = [
 ];
 
 export default function HelpScreen({onNavigate}: {onNavigate: UserNavigate}) {
-  const [openId, setOpenId] = useState<string | null>(SECTIONS[0].id);
+  // Nothing is pre-opened: the reader picks what they came for rather than
+  // being handed the dashboard section whether or not it is what they wanted.
+  const [openId, setOpenId] = useState<string | null>(null);
 
   return <UserShell onNavigate={onNavigate}>
     <View style={styles.pageHead}>
