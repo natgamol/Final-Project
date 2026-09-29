@@ -288,20 +288,25 @@ const SEVERITY_ORDER: Record<FeedSeverity, number> = {urgent: 0, warning: 1, inf
  * `stored` are the documents the server writes (admin announcements, adaptive
  * scheduling); the rest are derived from data the caller already holds.
  */
-export function buildNotificationFeed({activities, monthlyBudget, monthTransactions, notes, now = new Date(), stored = [], todayExpenses = []}: {
+export function buildNotificationFeed({activities, dailyBudget, monthlyBudget, monthTransactions, notes, now = new Date(), stored = [], todayExpenses = [], weeklyBudget}: {
   activities?: unknown;
+  /** A daily limit the user set; omitted, the monthly amount is split evenly. */
+  dailyBudget?: number;
   monthlyBudget?: number;
   monthTransactions?: Pick<Transaction, 'amount' | 'occurredAt' | 'type'>[];
   notes?: unknown;
   now?: Date;
   stored?: WithId<Notification>[];
   todayExpenses?: {amount: number}[];
+  /** A weekly limit the user set; omitted, the monthly amount is split evenly. */
+  weeklyBudget?: number;
 }): FeedItem[] {
   const budget = monthlyBudget ?? 0;
   const transactions = monthTransactions ?? [];
-  const insight = calculateFinanceBudgetInsight({monthlyBudget: budget, now, transactions});
-  const allowance = calculateDailyAllowance({monthlyBudget: budget, now, transactions});
+  const insight = calculateFinanceBudgetInsight({dailyBudget, monthlyBudget: budget, now, transactions, weeklyBudget});
+  const allowance = calculateDailyAllowance({dailyBudget, monthlyBudget: budget, now, transactions, weeklyBudget});
   const tension = calculateBudgetTension({
+    dailyBudget,
     monthlyBudget: budget,
     now,
     todaySpent: todayExpenses.reduce((sum, item) => sum + Number(item.amount ?? 0), 0),

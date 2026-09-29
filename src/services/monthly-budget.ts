@@ -5,6 +5,18 @@ import {readLatestRemoteBudgetBefore, readRemoteBudget, writeRemoteBudget} from 
 
 export type MonthlyBudget = {
   amount: number;
+  /**
+   * A daily limit the user set themselves.
+   *
+   * Left unset when they have not, which is what keeps today's behaviour: the
+   * calculators fall back to splitting the monthly amount, so the derived
+   * figure follows the monthly limit whenever that changes. Storing the derived
+   * number here instead would freeze it at whatever the month it was saved in
+   * happened to be.
+   */
+  dailyAmount?: number;
+  /** A weekly limit the user set themselves; see `dailyAmount`. */
+  weeklyAmount?: number;
   monthKey: string;
   /** Month the amount was originally saved for, when it was carried forward. */
   rolledOverFrom?: string;
@@ -61,8 +73,14 @@ function withSyncTimeout<T>(work: Promise<T>, timeoutMs: number): Promise<T> {
  * because a queued write that is still unacknowledged when the caller gives up
  * would otherwise surface as an unhandled rejection.
  */
-function startSync(uid: string, budget: Pick<MonthlyBudget, 'amount' | 'monthKey' | 'source'>) {
-  const pending = writeRemoteBudget(uid, {amount: budget.amount, monthKey: budget.monthKey, source: budget.source});
+function startSync(uid: string, budget: Pick<MonthlyBudget, 'amount' | 'dailyAmount' | 'monthKey' | 'source' | 'weeklyAmount'>) {
+  const pending = writeRemoteBudget(uid, {
+    amount: budget.amount,
+    monthKey: budget.monthKey,
+    source: budget.source,
+    ...(budget.weeklyAmount ? {weeklyAmount: budget.weeklyAmount} : {}),
+    ...(budget.dailyAmount ? {dailyAmount: budget.dailyAmount} : {}),
+  });
   pending.catch(() => undefined);
   return pending;
 }
@@ -126,6 +144,10 @@ function parseStored(raw: string | null, monthKey: string): MonthlyBudget | null
       source: value.source === 'ai' ? 'ai' : 'manual',
       synced: value.synced !== false,
       updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : new Date().toISOString(),
+      // Read back explicitly: anything this parser does not name is dropped,
+      // which would lose a user-set figure on every reload.
+      ...(isValidBudgetAmount(value.weeklyAmount) ? {weeklyAmount: value.weeklyAmount} : {}),
+      ...(isValidBudgetAmount(value.dailyAmount) ? {dailyAmount: value.dailyAmount} : {}),
     };
   } catch {
     return null;
@@ -143,6 +165,8 @@ async function writeCache(uid: string, budget: MonthlyBudget) {
     source: budget.source,
     synced: budget.synced !== false,
     updatedAt: budget.updatedAt,
+    ...(budget.weeklyAmount ? {weeklyAmount: budget.weeklyAmount} : {}),
+    ...(budget.dailyAmount ? {dailyAmount: budget.dailyAmount} : {}),
   }));
 }
 
@@ -202,7 +226,7 @@ export async function loadMonthlyBudget(
     // to the previous limit with nothing to explain why.
     if (cached && cached.synced === false) {
       const originMonth = cached.rolledOverFrom ?? cached.monthKey;
-      const pending = startSync(uid, {amount: cached.amount, monthKey: originMonth, source: cached.source});
+      const pending = startSync(uid, {amount: cached.amount, dailyAmount: cached.dailyAmount, monthKey: originMonth, source: cached.source, weeklyAmount: cached.weeklyAmount});
       try {
         await bounded(pending);
       } catch (error) {
@@ -231,7 +255,7 @@ export async function loadMonthlyBudget(
     // push it up now instead of losing it.
     if (cached) {
       const originMonth = cached.rolledOverFrom ?? cached.monthKey;
-      const pending = startSync(uid, {amount: cached.amount, monthKey: originMonth, source: cached.source});
+      const pending = startSync(uid, {amount: cached.amount, dailyAmount: cached.dailyAmount, monthKey: originMonth, source: cached.source, weeklyAmount: cached.weeklyAmount});
       try {
         await bounded(pending);
         const migrated = {...cached, synced: true};
@@ -268,12 +292,20 @@ export async function saveMonthlyBudget(
   if (!isValidBudgetAmount(budget.amount)) {
     throw new Error(`Monthly budget must be between 1 and ${MONTHLY_BUDGET_MAX}.`);
   }
+  if (budget.weeklyAmount !== undefined && !isValidBudgetAmount(budget.weeklyAmount)) {
+    throw new Error(`Weekly budget must be between 1 and ${MONTHLY_BUDGET_MAX}.`);
+  }
+  if (budget.dailyAmount !== undefined && !isValidBudgetAmount(budget.dailyAmount)) {
+    throw new Error(`Daily budget must be between 1 and ${MONTHLY_BUDGET_MAX}.`);
+  }
   const next: MonthlyBudget = {
     amount: budget.amount,
     monthKey: budget.monthKey,
     source: budget.source,
     synced: true,
     updatedAt: new Date().toISOString(),
+    ...(budget.weeklyAmount ? {weeklyAmount: budget.weeklyAmount} : {}),
+    ...(budget.dailyAmount ? {dailyAmount: budget.dailyAmount} : {}),
   };
 
   await writeCache(uid, {...next, synced: false});

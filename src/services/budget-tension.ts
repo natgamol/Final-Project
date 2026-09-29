@@ -22,5 +22,5 @@ export async function evaluateBudgetTension(uid: string) {
   const txList = await transactions.between(uid, from, to, 'expense');
   const todaySpent = txList.reduce((sum, tx) => sum + (tx.amount || 0), 0);
 
-  return calculateBudgetTension({ monthlyBudget: monthlyData.amount, now, todaySpent });
+  return calculateBudgetTension({ dailyBudget: monthlyData.dailyAmount, monthlyBudget: monthlyData.amount, now, todaySpent });
 }

@@ -88,10 +88,14 @@ function localDateKey(date: Date) { return `${date.getFullYear()}-${String(date.
 function roundMoney(value: number) { return !Number.isFinite(value) || value <= 0 ? 0 : Math.round(value); }
 function clamp(value: number, min: number, max: number) { return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min; }
 
-export function calculateFinanceBudgetInsight({monthlyBudget, now = new Date(), transactions}: {
+export function calculateFinanceBudgetInsight({dailyBudget, monthlyBudget, now = new Date(), transactions, weeklyBudget}: {
+  /** A daily limit the user set. Omitted, the monthly amount is split evenly. */
+  dailyBudget?: number;
   monthlyBudget: number;
   now?: Date;
   transactions: Pick<Transaction, 'amount' | 'occurredAt' | 'type'>[];
+  /** A weekly limit the user set. Omitted, the monthly amount is split evenly. */
+  weeklyBudget?: number;
 }): FinanceBudgetInsight | null {
   if (!Number.isFinite(monthlyBudget) || monthlyBudget <= 0) return null;
   // Every boundary below is anchored to Asia/Bangkok, because the spending it
@@ -103,8 +107,17 @@ export function calculateFinanceBudgetInsight({monthlyBudget, now = new Date(), 
   const expenses = transactions.filter((item) => item.type === 'expense');
   const spentSoFar = expenses.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
   const remainingBudget = monthlyBudget - spentSoFar;
-  const averageDailyBudget = roundMoney(monthlyBudget / totalDays);
-  const remainingDailyBudget = remainingBudget > 0 ? roundMoney(remainingBudget / daysRemainingIncludingToday) : 0;
+  // An explicit figure wins; without one the monthly amount is split, which is
+  // what every caller got before these arguments existed.
+  const setDaily = Number.isFinite(dailyBudget) && (dailyBudget ?? 0) > 0 ? dailyBudget as number : null;
+  const setWeekly = Number.isFinite(weeklyBudget) && (weeklyBudget ?? 0) > 0 ? weeklyBudget as number : null;
+  const averageDailyBudget = setDaily ?? roundMoney(monthlyBudget / totalDays);
+  // With a daily limit set, "what is left today" is that limit rather than the
+  // month's remainder re-spread: re-spreading it would quietly overwrite the
+  // number the user chose. The month running out still wins, so this cannot
+  // report room that the monthly limit no longer has.
+  const remainingDailyBudget = remainingBudget <= 0 ? 0
+    : setDaily ?? roundMoney(remainingBudget / daysRemainingIncludingToday);
   const expectedSpentByToday = monthlyBudget / totalDays * currentDay;
   const overspendAmount = Math.max(0, spentSoFar - expectedSpentByToday);
   const dailyExpenses = expenses.reduce((map, item) => {
@@ -122,13 +135,13 @@ export function calculateFinanceBudgetInsight({monthlyBudget, now = new Date(), 
   const weekStart = rawWeekStart < monthStart ? monthStart : rawWeekStart;
   const weekEnd = rawWeekEnd > monthEnd ? monthEnd : rawWeekEnd;
   const daysInBudgetWeek = Math.max(1, Math.round((weekEnd.getTime() + 1 - weekStart.getTime()) / 86_400_000));
-  const weeklyBudget = roundMoney(monthlyBudget / totalDays * daysInBudgetWeek);
+  const weeklyBudgetValue = setWeekly ?? roundMoney(monthlyBudget / totalDays * daysInBudgetWeek);
   const weekSpent = expenses.reduce((sum, item) => {
     const occurredAt = toDate(item.occurredAt);
     return occurredAt && occurredAt >= weekStart && occurredAt <= weekEnd ? sum + Number(item.amount ?? 0) : sum;
   }, 0);
-  const weeklyRemainingBudget = Math.round(weeklyBudget - weekSpent);
-  const weeklyUsagePercent = weeklyBudget > 0 ? Math.round((weekSpent / weeklyBudget) * 100) : 0;
+  const weeklyRemainingBudget = Math.round(weeklyBudgetValue - weekSpent);
+  const weeklyUsagePercent = weeklyBudgetValue > 0 ? Math.round((weekSpent / weeklyBudgetValue) * 100) : 0;
   const weeklyStatus: FinanceBudgetInsight['weeklyStatus'] = weeklyUsagePercent >= 100 ? 'exceeded' : weeklyUsagePercent >= 80 ? 'warning' : 'safe';
   let financePressureLevel: FinanceBudgetInsight['financePressureLevel'] = 'none';
   if (remainingBudget < 0 || weeklyStatus === 'exceeded') financePressureLevel = 'critical';
@@ -142,7 +155,7 @@ export function calculateFinanceBudgetInsight({monthlyBudget, now = new Date(), 
     monthKey: thailandMonthKey(now), monthlyBudget, overspendAmount: Math.round(overspendAmount),
     remainingBudget: Math.round(remainingBudget), remainingDailyBudget, runwayDays, spentSoFar,
     weekEnd: thailandDateKey(weekEnd), weekSpent: Math.round(weekSpent), weekStart: thailandDateKey(weekStart),
-    weeklyBudget, weeklyRemainingBudget, weeklyStatus, weeklyUsagePercent,
+    weeklyBudget: weeklyBudgetValue, weeklyRemainingBudget, weeklyStatus, weeklyUsagePercent,
   };
 }
 
@@ -167,12 +180,14 @@ export type DailyAllowance = {
  * showing a ฿0 that reads as "you have nothing left" -- which is what the tile
  * and the assistant chip did while they showed a day's income minus expenses.
  */
-export function calculateDailyAllowance({monthlyBudget, now = new Date(), transactions}: {
+export function calculateDailyAllowance({dailyBudget, monthlyBudget, now = new Date(), transactions, weeklyBudget}: {
+  dailyBudget?: number;
   monthlyBudget: number;
   now?: Date;
   transactions: Pick<Transaction, 'amount' | 'occurredAt' | 'type'>[];
+  weeklyBudget?: number;
 }): DailyAllowance | null {
-  const insight = calculateFinanceBudgetInsight({monthlyBudget, now, transactions});
+  const insight = calculateFinanceBudgetInsight({dailyBudget, monthlyBudget, now, transactions, weeklyBudget});
   if (!insight) return null;
   return {
     amount: insight.remainingDailyBudget,
@@ -202,7 +217,9 @@ export type BudgetTension = {
  * dashboard need this without a network round trip. `evaluateBudgetTension`
  * re-exports it and remains the loading front door.
  */
-export function calculateBudgetTension({monthlyBudget, now = new Date(), todaySpent}: {
+export function calculateBudgetTension({dailyBudget, monthlyBudget, now = new Date(), todaySpent}: {
+  /** A daily limit the user set. Omitted, the monthly amount is split evenly. */
+  dailyBudget?: number;
   monthlyBudget: number;
   now?: Date;
   todaySpent: number;
@@ -210,7 +227,11 @@ export function calculateBudgetTension({monthlyBudget, now = new Date(), todaySp
   if (!Number.isFinite(monthlyBudget) || monthlyBudget <= 0) return null;
 
   // Bangkok month length, to match the Bangkok day window used for `todaySpent`.
-  const dailyLimit = Math.round(monthlyBudget / thailandDaysInMonth(now) / 10) * 10;
+  // A limit the user set is used as given -- not rounded to ten like the
+  // derived one, which rounds only because an even split rarely lands neatly.
+  const dailyLimit = Number.isFinite(dailyBudget) && (dailyBudget ?? 0) > 0
+    ? dailyBudget as number
+    : Math.round(monthlyBudget / thailandDaysInMonth(now) / 10) * 10;
   const todayRemaining = dailyLimit - todaySpent;
   const percentUsed = dailyLimit > 0 ? (todaySpent / dailyLimit) * 100 : (todaySpent > 0 ? 100 : 0);
 

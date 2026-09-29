@@ -99,6 +99,9 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
   const [completingId, setCompletingId] = useState('');
   const [allowance, setAllowance] = useState<DailyAllowance | null>(null);
   const [budgetAmount, setBudgetAmount] = useState(0);
+  // Held beside the monthly amount so the feed and the allowance tile read the
+  // limits the user set rather than an even split of the month.
+  const [budgetLimits, setBudgetLimits] = useState<{daily?: number; weekly?: number}>({});
   const [monthTransactions, setMonthTransactions] = useState<{amount: number; occurredAt: never; type: 'expense' | 'income'}[]>([]);
   const [weekTransactions, setWeekTransactions] = useState<SpendingTransactionInput[]>([]);
   // `user/index` is a one-day window, so its transactions cannot answer what is
@@ -127,7 +130,8 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
     })));
     setBudgetAmount(monthly);
     setMonthTransactions(spending);
-    setAllowance(calculateDailyAllowance({monthlyBudget: monthly, transactions: spending}));
+    setBudgetLimits({daily: savedBudget?.dailyAmount, weekly: savedBudget?.weeklyAmount});
+    setAllowance(calculateDailyAllowance({dailyBudget: savedBudget?.dailyAmount, monthlyBudget: monthly, transactions: spending, weeklyBudget: savedBudget?.weeklyAmount}));
     setData(pageData);
   }, [uid]);
   useEffect(() => { load().catch(() => setData({})); }, [load]);
@@ -159,12 +163,14 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
   // the bell and the rows behind it can never disagree.
   const feed = useMemo<FeedItem[]>(() => buildNotificationFeed({
     activities: data?.activities,
+    dailyBudget: budgetLimits.daily,
     monthlyBudget: budgetAmount,
+    weeklyBudget: budgetLimits.weekly,
     monthTransactions,
     notes: data?.notes,
     stored: notifications as never,
     todayExpenses: items(data?.transactions).filter((item) => item.type === 'expense').map((item) => ({amount: Number(item.amount ?? 0)})),
-  }), [budgetAmount, data, monthTransactions, notifications]);
+  }), [budgetAmount, budgetLimits.daily, budgetLimits.weekly, data, monthTransactions, notifications]);
   const workNotes = useMemo(() => notes.filter((item) => item.status !== 'completed' && /งาน|task|assignment|homework/i.test(string(item, 'category', ''))), [notes]);
   // `pending` drives the priority card, the focus tile and the "งานที่ต้องทำ"
   // count, so a sleep log has to be filtered out here too -- otherwise a logged

@@ -91,9 +91,15 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    // `weeklyAmount` and `dailyAmount` are listed in `hasOnly` but deliberately
+    // not in `hasAll`: a user who has only ever set a monthly limit stores
+    // neither, and a client from before they existed keeps writing the six
+    // original fields and is still accepted.
     function validMonthlyBudget(data, userId, monthKey) {
       return data.keys().hasAll(['ownerId', 'amount', 'monthKey', 'source', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['ownerId', 'amount', 'monthKey', 'source', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'amount', 'monthKey', 'source', 'createdAt', 'updatedAt', 'weeklyAmount', 'dailyAmount'])
+        && (!('weeklyAmount' in data) || (data.weeklyAmount is number && data.weeklyAmount > 0 && data.weeklyAmount <= 10000000))
+        && (!('dailyAmount' in data) || (data.dailyAmount is number && data.dailyAmount > 0 && data.dailyAmount <= 10000000))
         && data.ownerId == userId
         && monthKey.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
         && data.monthKey == monthKey

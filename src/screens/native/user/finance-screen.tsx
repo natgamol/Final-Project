@@ -102,7 +102,7 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
   const [data, setData] = useState<Item | null>(null);
   const [loadError, setLoadError] = useState(false);
   const loadVersion = useRef(0);
-  const [monthlyBudget, setMonthlyBudget] = useState<{amount: number; rolledOver: boolean} | null>(null);
+  const [monthlyBudget, setMonthlyBudget] = useState<{amount: number; daily?: number; rolledOver: boolean; weekly?: number} | null>(null);
   const [monthData, setMonthData] = useState<Item | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const params = useLocalSearchParams<{period?: string; date?: string; filter?: string}>();
@@ -134,7 +134,7 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
     if (version !== loadVersion.current) return;
     setData(pageData);
     setMonthData(monthPage);
-    setMonthlyBudget(savedBudget ? {amount: savedBudget.amount, rolledOver: Boolean(savedBudget.rolledOverFrom)} : null);
+    setMonthlyBudget(savedBudget ? {amount: savedBudget.amount, daily: savedBudget.dailyAmount, rolledOver: Boolean(savedBudget.rolledOverFrom), weekly: savedBudget.weeklyAmount} : null);
     } catch (error) {
       console.error('[Finance] Data load failed', error);
       if (version === loadVersion.current) setLoadError(true);
@@ -163,10 +163,10 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
   const budgetLine = useMemo(() => {
     if (!isCurrentPeriod) return null;
     const monthlyAmount = monthlyBudget?.amount ?? 0;
-    const insight = calculateFinanceBudgetInsight({monthlyBudget: monthlyAmount, transactions: monthTransactions});
+    const insight = calculateFinanceBudgetInsight({dailyBudget: monthlyBudget?.daily, monthlyBudget: monthlyAmount, transactions: monthTransactions, weeklyBudget: monthlyBudget?.weekly});
     if (!insight) return {over: false, title: 'ยังไม่ได้ตั้งงบเดือนนี้', detail: 'ตั้งวงเงินแล้วหน้านี้จะบอกยอดที่ใช้ได้ของแต่ละช่วง'};
     if (period === 'day') {
-      const allowance = calculateDailyAllowance({monthlyBudget: monthlyAmount, transactions: monthTransactions});
+      const allowance = calculateDailyAllowance({dailyBudget: monthlyBudget?.daily, monthlyBudget: monthlyAmount, transactions: monthTransactions, weeklyBudget: monthlyBudget?.weekly});
       if (!allowance) return null;
       const monthUsed = insight.monthlyBudget > 0 ? insight.spentSoFar / insight.monthlyBudget : 0;
       return allowance.overBudget

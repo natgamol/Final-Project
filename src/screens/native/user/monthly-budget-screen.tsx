@@ -6,12 +6,15 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
 import {Touchable} from '@/components/touchable';
 import {calculateFinanceBudgetInsight} from '@/services/dynamic-insights';
+import {thailandDaysInMonth} from '@/lib/thailand-time';
 import {loadLegacyPageData} from '@/services/legacy-data';
 import {currentMonthKey, loadMonthlyBudget, parseBudgetAmount, saveMonthlyBudget, type MonthlyBudget} from '@/services/monthly-budget';
 import {MaterialIcon, UserGradientBackdrop, UserTabBar} from './user-ui';
 
 type Item = Record<string, unknown>;
 type BudgetMode = 'ai' | 'manual';
+/** Which limit the manual card is editing. Only one is edited at a time. */
+type BudgetScope = 'month' | 'week' | 'day';
 type Props = {onNavigate: (page: string) => void; uid: string};
 
 const C = {accent: '#626fa8', accentSoft: '#eceef8', amber: '#c98a3f', amberSoft: '#fdf1de', ink: '#29351f', mist: '#f4f6f1', muted: '#89928a', red: '#d66963', redSoft: '#fbe8e5', sage: '#618661', sageSoft: '#e2eddf', line: '#e3e8df'};
@@ -47,6 +50,11 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
   const [panel, setPanel] = useState<BudgetMode>('ai');
   const [source, setSource] = useState<BudgetMode>('ai');
   const [amountText, setAmountText] = useState('');
+  // Weekly and daily are optional overrides: empty means "split the month",
+  // which is what every screen did before they could be set at all.
+  const [scope, setScope] = useState<BudgetScope>('month');
+  const [weeklyText, setWeeklyText] = useState('');
+  const [dailyText, setDailyText] = useState('');
   const [transactions, setTransactions] = useState<Item[]>([]);
   const [saved, setSaved] = useState<MonthlyBudget | null>(null);
   // Set when this month's transactions could not be read. Income, spending and
@@ -69,17 +77,33 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
   const usedPercent = selectedAmount > 0 ? Math.round(expense / selectedAmount * 100) : 0;
   const budgetStatus = selectedAmount <= 0 ? 'unset' : usedPercent >= 100 ? 'over' : usedPercent >= 80 ? 'warning' : 'safe';
   const rolledOverFrom = saved?.rolledOverFrom;
-  const unsavedChange = Boolean(saved) && selectedAmount > 0 && selectedAmount !== saved?.amount;
+  const selectedWeekly = parseMoney(weeklyText);
+  const selectedDaily = parseMoney(dailyText);
+  // Stated, never corrected. The app does not quietly move a number the user
+  // typed; it says what the figures add up to and lets them decide, the same
+  // way the over-spend prompt on the finance screen does.
+  const daysThisMonth = thailandDaysInMonth(new Date());
+  const dailyOverflow = selectedDaily > 0 && selectedAmount > 0 && selectedDaily * daysThisMonth > selectedAmount
+    ? {projected: selectedDaily * daysThisMonth} : null;
+  const weeklyOverflow = selectedWeekly > 0 && selectedAmount > 0 && selectedWeekly * (daysThisMonth / 7) > selectedAmount
+    ? {projected: Math.round(selectedWeekly * (daysThisMonth / 7))} : null;
+  const unsavedChange = Boolean(saved) && (
+    (selectedAmount > 0 && selectedAmount !== saved?.amount)
+    || selectedWeekly !== (saved?.weeklyAmount ?? 0)
+    || selectedDaily !== (saved?.dailyAmount ?? 0)
+  );
   const recommendationApplied = recommendation > 0 && selectedAmount === recommendation;
 
   const financeInsight = useMemo(() => (dataError ? null : calculateFinanceBudgetInsight({
+    dailyBudget: selectedDaily || undefined,
     monthlyBudget: selectedAmount,
+    weeklyBudget: selectedWeekly || undefined,
     transactions: transactions.map((item) => ({
       amount: Number(item.amount ?? 0),
       occurredAt: item.occurredAt as never,
       type: item.type === 'income' ? 'income' : 'expense',
     })),
-  })), [dataError, selectedAmount, transactions]);
+  })), [dataError, selectedAmount, selectedDaily, selectedWeekly, transactions]);
   const monthLabel = monthKeyLabel(monthKey);
 
   const load = useCallback(async () => {
@@ -115,6 +139,8 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
       setPanel(savedBudget.source);
       setSource(savedBudget.source);
       setAmountText(String(savedBudget.amount));
+      setWeeklyText(savedBudget.weeklyAmount ? String(savedBudget.weeklyAmount) : '');
+      setDailyText(savedBudget.dailyAmount ? String(savedBudget.dailyAmount) : '');
     }
     setLoading(false);
   }, [uid]);
@@ -158,7 +184,13 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
     setFormError('');
     setSaving(true);
     try {
-      const next = await saveMonthlyBudget(uid, {amount: selectedAmount, monthKey, source});
+      const next = await saveMonthlyBudget(uid, {
+        amount: selectedAmount,
+        monthKey,
+        source,
+        ...(selectedWeekly > 0 ? {weeklyAmount: selectedWeekly} : {}),
+        ...(selectedDaily > 0 ? {dailyAmount: selectedDaily} : {}),
+      });
       setSaved(next);
       setSuccessMessage(next.synced === false
         ? `บันทึกไว้ในเครื่องนี้แล้ว ${money(selectedAmount)} จะซิงค์ไปเครื่องอื่นเมื่อกลับมาออนไลน์`
@@ -249,7 +281,26 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
               ? 'กด บันทึกงบเดือนนี้ ด้านล่างเพื่อให้ลิมิตนี้มีผลกับหน้าการเงินและผู้ช่วย AI'
               : `ตอนนี้ใช้ลิมิต ${selectedAmount > 0 ? money(selectedAmount) : 'ยังไม่ได้ตั้ง'} อยู่ การดูคำแนะนำนี้ยังไม่เปลี่ยนลิมิตจนกว่าจะกดปุ่มด้านบนแล้วบันทึก`}</Text>
           </> : null}
-        </View> : <View style={styles.card}><Text style={styles.fieldLabel}>กำหนดลิมิตค่าใช้จ่ายเดือนนี้</Text><View style={styles.inputShell}><Text style={styles.currency}>฿</Text><TextInput accessibilityLabel="จำนวนงบรายเดือน" keyboardType="number-pad" onChangeText={(value) => { const parsed = parseMoney(value); setAmountText(parsed > 0 ? String(parsed) : ''); setSource('manual'); setFormError(''); setSuccessMessage(''); }} placeholder="เช่น 5,000" placeholderTextColor="#a5ada1" style={styles.amountInput} value={amountText} /></View><Text style={styles.inputHint}>คุณสามารถเปลี่ยนงบใหม่ได้ตลอดเดือน ยอดที่ใช้ไปแล้วจะถูกคิดเทียบกับลิมิตใหม่ทันที</Text></View>}
+        </View> : <View style={styles.card}>
+          {/* One limit at a time. Three inputs side by side would read as three
+              things to fill in, when in practice people set one and leave the
+              rest to be split -- which is what an empty field means here. */}
+          <View style={styles.scopeBar}>{([['month', 'เดือน'], ['week', 'สัปดาห์'], ['day', 'วัน']] as [BudgetScope, string][]).map(([value, label]) => (
+            <Touchable accessibilityRole="button" accessibilityState={{selected: scope === value}} key={value} onPress={() => setScope(value)} style={[styles.scopeItem, scope === value && styles.scopeItemActive]}>
+              <Text style={[styles.scopeText, scope === value && styles.scopeTextActive]}>{label}</Text>
+            </Touchable>
+          ))}</View>
+          {scope === 'week' ? <>
+            <Text style={styles.fieldLabel}>กำหนดงบรายสัปดาห์เอง</Text>
+            <View style={styles.inputShell}><Text style={styles.currency}>฿</Text><TextInput accessibilityLabel="จำนวนงบรายสัปดาห์" keyboardType="number-pad" onChangeText={(value) => { const parsed = parseMoney(value); setWeeklyText(parsed > 0 ? String(parsed) : ''); setSource('manual'); setFormError(''); setSuccessMessage(''); }} placeholder="เว้นว่างให้ระบบแบ่งให้" placeholderTextColor="#a5ada1" style={styles.amountInput} value={weeklyText} /></View>
+            <Text style={styles.inputHint}>{selectedWeekly > 0 ? 'ใช้ตัวเลขนี้แทนการแบ่งจากงบเดือน' : `เว้นว่างไว้ ระบบจะแบ่งจากงบเดือนให้เป็น ${money(financeInsight?.weeklyBudget ?? 0)}`}</Text>
+            {weeklyOverflow ? <View style={styles.overflowBox}><MaterialIcon color={C.amber} name="error_outline" size={17} /><Text style={styles.overflowText}>งบรายสัปดาห์นี้รวมทั้งเดือนเป็น {money(weeklyOverflow.projected)} ซึ่งมากกว่างบเดือน {money(selectedAmount)} — บันทึกได้ แต่ทั้งสองจะเตือนคนละแบบ</Text></View> : null}
+          </> : scope === 'day' ? <>
+            <Text style={styles.fieldLabel}>กำหนดงบรายวันเอง</Text>
+            <View style={styles.inputShell}><Text style={styles.currency}>฿</Text><TextInput accessibilityLabel="จำนวนงบรายวัน" keyboardType="number-pad" onChangeText={(value) => { const parsed = parseMoney(value); setDailyText(parsed > 0 ? String(parsed) : ''); setSource('manual'); setFormError(''); setSuccessMessage(''); }} placeholder="เว้นว่างให้ระบบแบ่งให้" placeholderTextColor="#a5ada1" style={styles.amountInput} value={dailyText} /></View>
+            <Text style={styles.inputHint}>{selectedDaily > 0 ? 'ใช้ตัวเลขนี้แทนการแบ่งจากงบเดือน' : `เว้นว่างไว้ ระบบจะแบ่งจากงบเดือนให้เป็น ${money(financeInsight?.averageDailyBudget ?? 0)}`}</Text>
+            {dailyOverflow ? <View style={styles.overflowBox}><MaterialIcon color={C.amber} name="error_outline" size={17} /><Text style={styles.overflowText}>งบรายวันนี้รวมทั้งเดือนเป็น {money(dailyOverflow.projected)} ซึ่งมากกว่างบเดือน {money(selectedAmount)} — บันทึกได้ แต่ทั้งสองจะเตือนคนละแบบ</Text></View> : null}
+          </> : <><Text style={styles.fieldLabel}>กำหนดลิมิตค่าใช้จ่ายเดือนนี้</Text><View style={styles.inputShell}><Text style={styles.currency}>฿</Text><TextInput accessibilityLabel="จำนวนงบรายเดือน" keyboardType="number-pad" onChangeText={(value) => { const parsed = parseMoney(value); setAmountText(parsed > 0 ? String(parsed) : ''); setSource('manual'); setFormError(''); setSuccessMessage(''); }} placeholder="เช่น 5,000" placeholderTextColor="#a5ada1" style={styles.amountInput} value={amountText} /></View><Text style={styles.inputHint}>คุณสามารถเปลี่ยนงบใหม่ได้ตลอดเดือน ยอดที่ใช้ไปแล้วจะถูกคิดเทียบกับลิมิตใหม่ทันที</Text></>}</View>}
 
         {formError ? <View style={styles.formErrorBox}><MaterialIcon color={C.red} name="error" size={17} /><Text style={styles.formErrorText}>{formError}</Text></View> : null}
         {successMessage ? <View style={styles.formSuccessBox}><MaterialIcon color={C.sage} name="check_circle" size={17} /><Text style={styles.formSuccessText}>{successMessage}</Text></View> : null}
@@ -277,6 +328,13 @@ const styles = StyleSheet.create({
   header: {alignItems: 'center', flexDirection: 'row', gap: 10}, headerCopy: {flex: 1}, headerIcon: {alignItems: 'center', backgroundColor: C.accent, borderRadius: 21, height: 42, justifyContent: 'center', width: 42}, hero: {...shadow, borderRadius: 23, marginTop: 16, overflow: 'hidden', padding: 18}, heroAmount: {color: '#fff', fontFamily: F.x, fontSize: 32, marginTop: 2}, heroEyebrow: {color: 'rgba(255,255,255,.8)', fontFamily: F.s, fontSize: 12}, heroGlow: {backgroundColor: 'rgba(255,255,255,.15)', borderBottomLeftRadius: 90, height: 110, position: 'absolute', right: 0, top: 0, width: 110}, heroStat: {flex: 1}, heroStatLabel: {color: 'rgba(255,255,255,.7)', fontFamily: F.r, fontSize: 12}, heroStatRow: {borderTopColor: 'rgba(255,255,255,.22)', borderTopWidth: 1, flexDirection: 'row', gap: 18, marginTop: 14, paddingTop: 11}, heroStatValue: {color: '#fff', fontFamily: F.b, fontSize: 12, marginTop: 1}, heroText: {color: 'rgba(255,255,255,.82)', fontFamily: F.r, fontSize: 12}, inputHint: {color: C.muted, fontFamily: F.r, fontSize: 12, lineHeight: 18, marginTop: 7}, inputShell: {alignItems: 'center', backgroundColor: '#f6f8f4', borderColor: C.line, borderRadius: 15, borderWidth: 1, flexDirection: 'row', marginTop: 8, paddingHorizontal: 14}, loading: {alignItems: 'center', gap: 9, paddingVertical: 100}, loadingText: {color: C.muted, fontFamily: F.r, fontSize: 12}, modeBar: {backgroundColor: '#fff', borderRadius: 17, flexDirection: 'row', marginTop: 14, padding: 5}, modeButton: {alignItems: 'center', borderRadius: 13, flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', minHeight: 43}, modeButtonActive: {backgroundColor: C.ink}, modeText: {color: C.muted, fontFamily: F.b, fontSize: 12}, modeTextActive: {color: '#fff'},
   noticeBanner: {alignItems: 'flex-start', backgroundColor: C.amberSoft, borderRadius: 16, flexDirection: 'row', gap: 9, marginTop: 14, padding: 13}, noticeText: {color: '#8a6a3c', fontFamily: F.r, fontSize: 12, lineHeight: 18, marginTop: 2}, noticeTitle: {color: C.amber, fontFamily: F.b, fontSize: 12},
   progressFill: {borderRadius: 99, height: 10}, progressLabel: {color: C.ink, fontFamily: F.b, fontSize: 12}, progressTop: {alignItems: 'baseline', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 9}, progressTrack: {backgroundColor: '#e4e8e2', borderRadius: 99, height: 10, overflow: 'hidden'}, progressValue: {color: C.muted, fontFamily: F.s, fontSize: 12},
+  overflowBox: {alignItems: 'flex-start', backgroundColor: C.amberSoft, borderRadius: 12, flexDirection: 'row', gap: 8, marginTop: 10, padding: 10},
+  overflowText: {color: '#8a6528', flex: 1, fontFamily: F.m, fontSize: 12, lineHeight: 18},
+  scopeBar: {backgroundColor: '#f2f5ef', borderRadius: 14, flexDirection: 'row', marginBottom: 14, padding: 4},
+  scopeItem: {alignItems: 'center', borderRadius: 11, flex: 1, paddingVertical: 8},
+  scopeItemActive: {backgroundColor: C.ink},
+  scopeText: {color: C.muted, fontFamily: F.b, fontSize: 12},
+  scopeTextActive: {color: '#fff'},
   recommendation: {alignItems: 'baseline', backgroundColor: '#f2f5ef', borderRadius: 15, flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, paddingHorizontal: 13, paddingVertical: 11}, recommendationAmount: {color: C.ink, fontFamily: F.x, fontSize: 21}, recommendationLabel: {color: C.sage, fontFamily: F.b, fontSize: 12},
   retryButton: {backgroundColor: '#fff', borderRadius: 11, paddingHorizontal: 12, paddingVertical: 8}, retryText: {color: C.red, fontFamily: F.b, fontSize: 12},
   safe: {backgroundColor: C.mist, flex: 1}, save: {alignItems: 'center', borderRadius: 17, flexDirection: 'row', gap: 8, height: 54, justifyContent: 'center'}, saveShell: {...shadow, borderRadius: 17, marginTop: 15, overflow: 'hidden'}, saveText: {color: '#fff', fontFamily: F.b, fontSize: 13}, screen: {backgroundColor: C.mist, flex: 1}, shareAmount: {color: C.ink, fontFamily: F.x, fontSize: 24, marginTop: 3}, shareCell: {alignItems: 'center', backgroundColor: '#f2f5ef', borderRadius: 15, flex: 1, paddingHorizontal: 11, paddingVertical: 14}, shareLabel: {color: C.sage, fontFamily: F.b, fontSize: 12}, shareRow: {flexDirection: 'row', gap: 10, marginTop: 15}, split: {marginTop: 13}, splitAmount: {color: C.ink, fontFamily: F.b, fontSize: 12}, splitFill: {borderRadius: 99, height: 9}, splitLabel: {color: C.muted, fontFamily: F.s, fontSize: 12}, splitTop: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6}, splitTrack: {backgroundColor: '#e4e8e2', borderRadius: 99, height: 9, overflow: 'hidden'},

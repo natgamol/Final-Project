@@ -474,7 +474,7 @@ export async function loadAssistantContext(uid: string): Promise<AssistantContex
   // evidence counts. It reaches the model only as a labelled fallback.
   const sleepBaselineHours = baselineNightHours(await loadSleepBaseline(uid).catch(() => null));
   const financeDynamic = monthlyBudget
-    ? calculateFinanceBudgetInsight({monthlyBudget: monthlyBudget.amount, transactions: monthTransactions})
+    ? calculateFinanceBudgetInsight({dailyBudget: monthlyBudget.dailyAmount, monthlyBudget: monthlyBudget.amount, transactions: monthTransactions, weeklyBudget: monthlyBudget.weeklyAmount})
     : null;
   const dynamic: SmartLifeDynamicInsight = {
     burnout: calculateBurnoutDynamicInsight({

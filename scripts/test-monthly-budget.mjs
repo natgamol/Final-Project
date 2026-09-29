@@ -3,7 +3,7 @@
 // than inheriting the machine's clock.
 import assert from 'node:assert/strict';
 
-import {calculateDailyAllowance, calculateFinanceBudgetInsight} from '../src/services/dynamic-insights.ts';
+import {calculateBudgetTension, calculateDailyAllowance, calculateFinanceBudgetInsight} from '../src/services/dynamic-insights.ts';
 import {
   currentMonthKey,
   isValidBudgetAmount,
@@ -176,5 +176,93 @@ assert.equal(parseBudgetAmount('99999999999'), MONTHLY_BUDGET_MAX, 'an oversized
 // showing a ฿0 that reads as "you have nothing left".
 assert.equal(calculateDailyAllowance({monthlyBudget: 0, now, transactions: [tx(300, '2026-08-05T06:00:00Z')]}), null);
 assert.equal(calculateDailyAllowance({monthlyBudget: Number.NaN, now, transactions: []}), null);
+
+// --- User-set weekly and daily limits.
+//
+// The first assertion is the one that matters most: with no override passed,
+// every figure has to be exactly what it was before overrides existed, because
+// six call sites reach these functions and any of them can still call without
+// them.
+{
+  const spending = [tx(900, '2026-08-05T06:00:00Z'), tx(400, '2026-08-19T05:00:00Z')];
+  const plain = calculateFinanceBudgetInsight({monthlyBudget: 6200, now, transactions: spending});
+  const explicitlyUndefined = calculateFinanceBudgetInsight({
+    dailyBudget: undefined, monthlyBudget: 6200, now, transactions: spending, weeklyBudget: undefined,
+  });
+  assert.deepEqual(explicitlyUndefined, plain, 'passing no override changes nothing at all');
+
+  // A weekly override replaces the split, and the percentage follows it.
+  const weekly = calculateFinanceBudgetInsight({monthlyBudget: 6200, now, transactions: spending, weeklyBudget: 2000});
+  assert.equal(weekly.weeklyBudget, 2000, 'the weekly figure is the one that was set');
+  assert.equal(weekly.weeklyUsagePercent, Math.round(weekly.weekSpent / 2000 * 100), 'usage is measured against it');
+  assert.equal(weekly.monthlyBudget, plain.monthlyBudget, 'the monthly limit is untouched by a weekly override');
+  assert.equal(weekly.spentSoFar, plain.spentSoFar, 'and so is the spending it reports');
+
+  // A daily override becomes what is left today, instead of re-spreading the
+  // month's remainder over the days left.
+  const daily = calculateFinanceBudgetInsight({dailyBudget: 150, monthlyBudget: 6200, now, transactions: spending});
+  assert.equal(daily.averageDailyBudget, 150, 'the daily figure is the one that was set');
+  assert.equal(daily.remainingDailyBudget, 150, 'and it is what today has left');
+  assert.notEqual(plain.remainingDailyBudget, 150, 'which the even split would not have produced');
+
+  // The month still wins: an override cannot report room the month has spent.
+  const blown = calculateFinanceBudgetInsight({dailyBudget: 150, monthlyBudget: 1000, now, transactions: [tx(1800, '2026-08-05T06:00:00Z')]});
+  assert.equal(blown.remainingDailyBudget, 0, 'nothing is left today once the month is over its limit');
+
+  // The allowance wrapper passes both through rather than recomputing.
+  assert.equal(
+    calculateDailyAllowance({dailyBudget: 150, monthlyBudget: 6200, now, transactions: spending}).amount, 150,
+    'the daily allowance honours an override too',
+  );
+  assert.equal(
+    calculateDailyAllowance({monthlyBudget: 6200, now, transactions: spending}).amount,
+    calculateDailyAllowance({dailyBudget: undefined, monthlyBudget: 6200, now, transactions: spending}).amount,
+    'and is unchanged without one',
+  );
+
+  // Zero and NaN are "not set", not "a limit of zero".
+  assert.equal(
+    calculateFinanceBudgetInsight({dailyBudget: 0, monthlyBudget: 6200, now, transactions: spending}).averageDailyBudget,
+    plain.averageDailyBudget,
+    'a zero override falls back to the split',
+  );
+  assert.equal(
+    calculateFinanceBudgetInsight({weeklyBudget: Number.NaN, monthlyBudget: 6200, now, transactions: spending}).weeklyBudget,
+    plain.weeklyBudget,
+    'and so does a NaN one',
+  );
+}
+
+// --- Today's pressure uses a daily limit that was set, as given.
+{
+  const derived = calculateBudgetTension({monthlyBudget: 6200, now, todaySpent: 100});
+  const set = calculateBudgetTension({dailyBudget: 250, monthlyBudget: 6200, now, todaySpent: 100});
+  assert.equal(set.dailyLimit, 250, 'the limit that was set is used unrounded');
+  assert.equal(set.todayRemaining, 150);
+  assert.equal(
+    calculateBudgetTension({dailyBudget: undefined, monthlyBudget: 6200, now, todaySpent: 100}).dailyLimit,
+    derived.dailyLimit,
+    'without one, the rounded even split is unchanged',
+  );
+}
+
+// --- The optional amounts survive a save and reload, and are left off the
+// stored copy entirely when they were never set.
+{
+  const monthKey = currentMonthKey(now);
+  const saved = await saveMonthlyBudget('user-scoped-limits', {
+    amount: 6000, dailyAmount: 180, monthKey, source: 'manual', weeklyAmount: 1400,
+  }, {syncTimeoutMs: 1});
+  assert.equal(saved.weeklyAmount, 1400);
+  assert.equal(saved.dailyAmount, 180);
+  const reloaded = await loadMonthlyBudget('user-scoped-limits', monthKey);
+  assert.equal(reloaded.weeklyAmount, 1400, 'the weekly limit survives the round trip through storage');
+  assert.equal(reloaded.dailyAmount, 180, 'and so does the daily one');
+
+  const monthlyOnly = await saveMonthlyBudget('user-monthly-only', {amount: 6000, monthKey, source: 'manual'}, {syncTimeoutMs: 1});
+  assert.equal(monthlyOnly.weeklyAmount, undefined, 'a budget with no override stores none');
+  assert.equal(monthlyOnly.dailyAmount, undefined);
+  assert.equal((await loadMonthlyBudget('user-monthly-only', monthKey)).dailyAmount, undefined);
+}
 
 console.log('SmartLife monthly budget tests passed');

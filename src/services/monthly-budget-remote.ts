@@ -21,10 +21,20 @@ import {isDemoMode} from '@/lib/demo-mode';
  */
 export type RemoteBudget = {
   amount: number;
+  /** Present only when the user set a daily figure rather than deriving one. */
+  dailyAmount?: number;
   monthKey: string;
   source: 'ai' | 'manual';
   updatedAt: string;
+  /** Present only when the user set a weekly figure rather than deriving one. */
+  weeklyAmount?: number;
 };
+
+/** Absent and zero both mean "not set", so both come back as undefined. */
+function optionalAmount(value: unknown) {
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount > 0 ? amount : undefined;
+}
 
 function budgets(uid: string) {
   return collection(db, 'users', uid, 'monthlyBudgets');
@@ -40,6 +50,8 @@ function toRemote(monthKey: string, data: Record<string, unknown> | undefined): 
     monthKey,
     source: data.source === 'ai' ? 'ai' : 'manual',
     updatedAt: typeof updatedAt?.toDate === 'function' ? updatedAt.toDate().toISOString() : new Date().toISOString(),
+    ...(optionalAmount(data.weeklyAmount) === undefined ? {} : {weeklyAmount: optionalAmount(data.weeklyAmount)}),
+    ...(optionalAmount(data.dailyAmount) === undefined ? {} : {dailyAmount: optionalAmount(data.dailyAmount)}),
   };
 }
 
@@ -77,12 +89,17 @@ export async function writeRemoteBudget(uid: string, budget: Omit<RemoteBudget, 
   const existing = await getDoc(reference);
   // `createdAt` must stay fixed across updates; the rules reject a write that
   // moves it, so it is only sent when the document is new.
+  // The optional figures are spread in only when set. The rules accept the
+  // document without them, and writing an explicit `undefined` would be a
+  // field the rules then reject.
   await setDoc(reference, {
     amount: budget.amount,
     monthKey: budget.monthKey,
     ownerId: uid,
     source: budget.source,
     updatedAt: serverTimestamp(),
+    ...(budget.weeklyAmount ? {weeklyAmount: budget.weeklyAmount} : {}),
+    ...(budget.dailyAmount ? {dailyAmount: budget.dailyAmount} : {}),
     ...(existing.exists() ? {createdAt: existing.data().createdAt} : {createdAt: serverTimestamp()}),
   });
 }

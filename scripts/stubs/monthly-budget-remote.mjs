@@ -63,6 +63,10 @@ function commit(uid, budget) {
     monthKey: budget.monthKey,
     source: budget.source,
     updatedAt: new Date().toISOString(),
+    // Optional, exactly as the real module writes them: absent unless the user
+    // set one. Dropping them here made a saved limit come back without them.
+    ...(budget.weeklyAmount ? {weeklyAmount: budget.weeklyAmount} : {}),
+    ...(budget.dailyAmount ? {dailyAmount: budget.dailyAmount} : {}),
   });
 }
 

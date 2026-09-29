@@ -263,7 +263,9 @@ export default function NotificationsScreen({page, uid, onNavigate}: {page: Page
       ai,
       feed: buildNotificationFeed({
         activities: pageData.activities,
+        dailyBudget: savedBudget?.dailyAmount,
         monthlyBudget: savedBudget?.amount ?? 0,
+        weeklyBudget: savedBudget?.weeklyAmount,
         monthTransactions: itemsOf(monthData?.transactions).map((item) => ({
           amount: Number(item.amount ?? 0),
           occurredAt: item.occurredAt as never,
