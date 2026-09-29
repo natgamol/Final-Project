@@ -168,18 +168,21 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
     if (period === 'day') {
       const allowance = calculateDailyAllowance({monthlyBudget: monthlyAmount, transactions: monthTransactions});
       if (!allowance) return null;
+      const monthUsed = insight.monthlyBudget > 0 ? insight.spentSoFar / insight.monthlyBudget : 0;
       return allowance.overBudget
-        ? {over: true, title: `เกินงบเดือนนี้ ${money(Math.abs(allowance.remainingBudget))}`, detail: `ใช้ไปแล้ว ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`}
-        : {over: false, title: `งบวันนี้ใช้ได้อีก ${money(allowance.amount)}`, detail: `เหลือทั้งเดือน ${money(allowance.remainingBudget)} ใน ${insight.daysRemainingIncludingToday} วันที่เหลือ`};
+        ? {over: true, title: `เกินงบเดือนนี้ ${money(Math.abs(allowance.remainingBudget))}`, detail: `ใช้ไปแล้ว ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`, label: 'เกินงบเดือนนี้', amount: Math.abs(allowance.remainingBudget), ratio: monthUsed}
+        : {over: false, title: `งบวันนี้ใช้ได้อีก ${money(allowance.amount)}`, detail: `เหลือทั้งเดือน ${money(allowance.remainingBudget)} ใน ${insight.daysRemainingIncludingToday} วันที่เหลือ`, label: 'งบวันนี้ใช้ได้อีก', amount: allowance.amount, ratio: monthUsed};
     }
     if (period === 'week') {
+      const weekUsed = insight.weeklyBudget > 0 ? insight.weekSpent / insight.weeklyBudget : 0;
       return insight.weeklyRemainingBudget < 0
-        ? {over: true, title: `เกินงบสัปดาห์นี้ ${money(Math.abs(insight.weeklyRemainingBudget))}`, detail: `ใช้ ${money(insight.weekSpent)} จากงบสัปดาห์ ${money(insight.weeklyBudget)}`}
-        : {over: false, title: `งบสัปดาห์นี้เหลือ ${money(insight.weeklyRemainingBudget)}`, detail: `ใช้ไป ${insight.weeklyUsagePercent}% ของงบสัปดาห์ ${money(insight.weeklyBudget)}`};
+        ? {over: true, title: `เกินงบสัปดาห์นี้ ${money(Math.abs(insight.weeklyRemainingBudget))}`, detail: `ใช้ ${money(insight.weekSpent)} จากงบสัปดาห์ ${money(insight.weeklyBudget)}`, label: 'เกินงบสัปดาห์นี้', amount: Math.abs(insight.weeklyRemainingBudget), ratio: weekUsed}
+        : {over: false, title: `งบสัปดาห์นี้เหลือ ${money(insight.weeklyRemainingBudget)}`, detail: `ใช้ไป ${insight.weeklyUsagePercent}% ของงบสัปดาห์ ${money(insight.weeklyBudget)}`, label: 'งบสัปดาห์นี้เหลือ', amount: insight.weeklyRemainingBudget, ratio: weekUsed};
     }
+    const used = insight.monthlyBudget > 0 ? insight.spentSoFar / insight.monthlyBudget : 0;
     return insight.remainingBudget < 0
-      ? {over: true, title: `เกินงบเดือนนี้ ${money(Math.abs(insight.remainingBudget))}`, detail: `ใช้ ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`}
-      : {over: false, title: `งบเดือนนี้เหลือ ${money(insight.remainingBudget)}`, detail: `ใช้ไป ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`};
+      ? {over: true, title: `เกินงบเดือนนี้ ${money(Math.abs(insight.remainingBudget))}`, detail: `ใช้ ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`, label: 'เกินงบเดือนนี้', amount: Math.abs(insight.remainingBudget), ratio: used}
+      : {over: false, title: `งบเดือนนี้เหลือ ${money(insight.remainingBudget)}`, detail: `ใช้ไป ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`, label: 'งบเดือนนี้เหลือ', amount: insight.remainingBudget, ratio: used};
   }, [isCurrentPeriod, monthTransactions, monthlyBudget, period]);
   const categoryTotals = useMemo(() => Array.from(all.filter((item) => item.type === 'expense').reduce((map, item) => { const category = normalizeExpenseCategory(str(item, 'category', '')); map.set(category, (map.get(category) ?? 0) + Number(item.amount ?? 0)); return map; }, new Map<string, number>()).entries()).slice(0, 3), [all]);
   // `Alert.alert` is an empty function on react-native-web, so this dialog --
@@ -260,10 +263,29 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
 </Reveal>
 
 <Reveal index={6}>
+        {/* How much is still spendable is the question this page exists to
+            answer, so it is set at the balance card's weight rather than at the
+            weight of the rows under it. The tint carries the same green/red
+            coding the quick-add pills use, and the bar says the same thing
+            without being read. Branches that have no figure to lead with -- no
+            budget set yet -- fall back to the sentence they always showed. */}
         {budgetLine ? <Touchable onPress={() => onNavigate('smartlife_monthly_budget')} style={[styles.budgetStrip, budgetLine.over && styles.budgetStripOver]}>
-          <View style={[styles.budgetStripIcon, budgetLine.over && styles.budgetStripIconOver]}><MaterialIcon color={budgetLine.over ? C.red : C.sage} name={budgetLine.over ? 'error' : 'savings'} size={17} /></View>
-          <View style={{flex: 1}}><Text style={[styles.budgetStripTitle, budgetLine.over && styles.budgetStripTitleOver]}>{budgetLine.title}</Text><Text style={styles.budgetStripDetail}>{budgetLine.detail}</Text></View>
-          <MaterialIcon color={C.muted} name="chevron_right" size={20} />
+          {typeof budgetLine.amount === 'number' ? <>
+            <View style={styles.budgetStripHead}>
+              <View style={[styles.budgetStripIcon, budgetLine.over && styles.budgetStripIconOver]}><MaterialIcon color={budgetLine.over ? C.red : C.sage} name={budgetLine.over ? 'error' : 'savings'} size={17} /></View>
+              <Text style={[styles.budgetStripLabel, budgetLine.over && styles.budgetStripLabelOver]}>{budgetLine.label}</Text>
+              <MaterialIcon color={budgetLine.over ? C.red : C.sage} name="chevron_right" size={20} />
+            </View>
+            <AnimatedNumber format={money} style={[styles.budgetStripAmount, budgetLine.over && styles.budgetStripAmountOver]} value={budgetLine.amount ?? 0} />
+            <View style={styles.budgetStripTrack}>
+              <View style={[styles.budgetStripFill, budgetLine.over && styles.budgetStripFillOver, {width: `${Math.min(100, Math.max(0, Math.round((budgetLine.ratio ?? 0) * 100)))}%`}]} />
+            </View>
+            <Text style={styles.budgetStripDetail}>{budgetLine.detail}</Text>
+          </> : <View style={styles.budgetStripHead}>
+            <View style={[styles.budgetStripIcon, budgetLine.over && styles.budgetStripIconOver]}><MaterialIcon color={budgetLine.over ? C.red : C.sage} name={budgetLine.over ? 'error' : 'savings'} size={17} /></View>
+            <View style={{flex: 1}}><Text style={[styles.budgetStripTitle, budgetLine.over && styles.budgetStripTitleOver]}>{budgetLine.title}</Text><Text style={styles.budgetStripDetail}>{budgetLine.detail}</Text></View>
+            <MaterialIcon color={C.muted} name="chevron_right" size={20} />
+          </View>}
         </Touchable> : null}
 </Reveal>
 <Reveal index={7}>
@@ -528,11 +550,19 @@ function CategorySheet({current, onClose, onSelect, visible}: {current: string; 
 
 const shadow = {shadowColor: C.ink, shadowOffset: {height: 8, width: 0}, shadowOpacity: .07, shadowRadius: 18};
 const styles = StyleSheet.create({
-  budgetStrip: {alignItems: 'center', backgroundColor: '#fff', borderColor: C.sageSoft, borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 12, padding: 12},
+  budgetStrip: {backgroundColor: C.sageSoft, borderColor: 'rgba(97,134,97,.28)', borderRadius: 18, borderWidth: 1, gap: 2, marginTop: 12, padding: 14},
+  budgetStripAmount: {color: '#3f6340', fontFamily: F.x, fontSize: 30, marginTop: 2},
+  budgetStripAmountOver: {color: C.red},
+  budgetStripFill: {backgroundColor: C.sage, borderRadius: 99, height: 7},
+  budgetStripFillOver: {backgroundColor: C.red},
+  budgetStripHead: {alignItems: 'center', flexDirection: 'row', gap: 10},
+  budgetStripLabel: {color: '#4b6d4c', flex: 1, fontFamily: F.b, fontSize: 12},
+  budgetStripLabelOver: {color: C.red},
+  budgetStripTrack: {backgroundColor: 'rgba(255,255,255,.72)', borderRadius: 99, height: 7, marginTop: 11, overflow: 'hidden'},
   budgetStripDetail: {color: C.muted, fontFamily: F.r, fontSize: 12, lineHeight: 18, marginTop: 2},
   budgetStripIcon: {alignItems: 'center', backgroundColor: C.sageSoft, borderRadius: 14, height: 36, justifyContent: 'center', width: 36},
   budgetStripIconOver: {backgroundColor: C.redSoft},
-  budgetStripOver: {borderColor: C.redSoft},
+  budgetStripOver: {backgroundColor: C.redSoft, borderColor: 'rgba(219,103,98,.3)'},
   budgetStripTitle: {color: C.ink, fontFamily: F.b, fontSize: 12},
   budgetStripTitleOver: {color: C.red},
   allLink: {color: C.accent, fontFamily: F.b, fontSize: 12}, balanceAmount: {color: C.ink, fontFamily: F.x, fontSize: 30, marginTop: 2}, balanceCard: {...shadow, backgroundColor: '#fff', borderRadius: 21, marginTop: 10, overflow: 'hidden', padding: 15}, balanceCircle: {backgroundColor: C.accentSoft, borderBottomLeftRadius: 58, height: 72, position: 'absolute', right: 0, top: 0, width: 72}, balanceLabel: {color: C.ink, fontFamily: F.b, fontSize: 12}, balanceLabelRow: {alignItems: 'center', flexDirection: 'row', gap: 6}, balancePeriod: {color: C.muted, fontFamily: F.s, fontSize: 12, marginLeft: 92, marginTop: -14}, budgetPlanner: {alignItems: 'center', backgroundColor: '#fff0e8', borderColor: '#f0cfc1', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 13, padding: 12}, budgetPlannerIcon: {alignItems: 'center', backgroundColor: '#c87964', borderRadius: 20, boxShadow: '0 5px 11px rgba(176,99,79,.20)', height: 40, justifyContent: 'center', width: 40}, budgetPlannerText: {color: '#8e6256', fontFamily: F.r, fontSize: 12, marginTop: 2}, budgetPlannerTitle: {color: '#56372e', fontFamily: F.b, fontSize: 12}, balanceTop: {flexDirection: 'row', justifyContent: 'space-between'}, categoryTag: {backgroundColor: '#f1f3ef', borderRadius: 99, paddingHorizontal: 9, paddingVertical: 5}, categoryTagText: {color: '#697669', fontFamily: F.b, fontSize: 12}, categoryTags: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10}, content: {padding: 20, paddingBottom: 26}, delete: {alignItems: 'center', height: 28, justifyContent: 'center', marginLeft: 2, width: 22}, empty: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, gap: 6, paddingVertical: 28}, emptyText: {color: C.muted, fontFamily: F.r, fontSize: 12}, eyebrow: {color: C.sage, fontFamily: F.b, fontSize: 12}, filterActive: {backgroundColor: C.accent}, filterBar: {backgroundColor: '#fff', borderRadius: 16, flexDirection: 'row', marginTop: 9, padding: 5}, filterItem: {alignItems: 'center', borderRadius: 12, flex: 1, paddingVertical: 8}, filterText: {color: C.muted, fontFamily: F.b, fontSize: 12}, filterTextActive: {color: '#fff'}, header: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'}, insight: {alignItems: 'center', backgroundColor: '#eef1fa', borderRadius: 18, flexDirection: 'row', gap: 10, marginTop: 14, padding: 12}, insightIcon: {alignItems: 'center', backgroundColor: C.accent, borderRadius: 20, height: 40, justifyContent: 'center', width: 40}, insightText: {color: '#7c8790', fontFamily: F.r, fontSize: 12, marginTop: 2}, insightTitle: {color: C.ink, fontFamily: F.b, fontSize: 12}, loading: {alignItems: 'center', gap: 9, paddingVertical: 80}, loadingText: {color: C.muted, fontFamily: F.r, fontSize: 12}, periodActive: {backgroundColor: C.ink}, periodBar: {backgroundColor: '#fff', borderRadius: 16, flexDirection: 'row', marginTop: 12, padding: 5}, periodItem: {alignItems: 'center', borderRadius: 12, flex: 1, paddingVertical: 9}, periodText: {color: C.muted, fontFamily: F.b, fontSize: 12}, periodTextActive: {color: '#fff'}, progress: {backgroundColor: '#e4e5ec', borderRadius: 99, height: 7, marginTop: 16, overflow: 'hidden'}, progressFill: {backgroundColor: C.accent, borderRadius: 99, height: 7}, quickAddPill: {alignItems: 'center', borderRadius: 14, borderWidth: 1, flex: 1, flexDirection: 'row', gap: 6, justifyContent: 'center', minHeight: 42}, quickAddPillExpense: {backgroundColor: C.redSoft, borderColor: 'rgba(219,103,98,.22)'}, quickAddPillIncome: {backgroundColor: C.sageSoft, borderColor: 'rgba(97,134,97,.22)'}, quickAddPillText: {fontFamily: F.b, fontSize: 12}, quickAddRow: {flexDirection: 'row', gap: 10, marginTop: 12}, quickAmountInput: {color: C.ink, flex: 1, fontFamily: F.x, fontSize: 26, paddingVertical: 10}, quickAmountShell: {alignItems: 'center', backgroundColor: '#f4f6f1', borderColor: '#e3e8df', borderRadius: 15, borderWidth: 1, flexDirection: 'row', gap: 8, marginBottom: 6, paddingHorizontal: 14}, quickCurrency: {color: C.muted, fontFamily: F.x, fontSize: 20}, quickFieldLabel: {color: C.ink, fontFamily: F.s, fontSize: 12, marginBottom: 8, marginTop: 8}, quickFullLinkText: {color: C.accent, fontFamily: F.b, fontSize: 12}, quickSave: {alignItems: 'center', borderRadius: 15, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 14, minHeight: 48}, quickSaveExpense: {backgroundColor: '#c96e68'}, quickSaveIncome: {backgroundColor: C.sage}, quickSaveOff: {opacity: .45}, quickSaveText: {color: '#fff', fontFamily: F.b, fontSize: 13}, rangeBar: {alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 8}, rangeButton: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, height: 36, justifyContent: 'center', width: 36}, rangeHint: {color: C.accent, fontFamily: F.b, fontSize: 12}, rangeLabel: {alignItems: 'center', flex: 1, justifyContent: 'center', minHeight: 36}, rangeToday: {color: C.ink, fontFamily: F.b, fontSize: 12, marginTop: 1}, receiptButton: {alignItems: 'center', backgroundColor: C.accent, borderRadius: 28, boxShadow: '0 7px 17px rgba(69,77,125,.25)', height: 54, justifyContent: 'center', width: 54}, safe: {backgroundColor: C.mist, flex: 1}, screen: {backgroundColor: C.mist, flex: 1}, sectionHead: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, marginTop: 17}, sectionTitle: {color: C.ink, fontFamily: F.x, fontSize: 14}, summary: {...shadow, backgroundColor: '#fff', borderRadius: 18, flex: 1, minHeight: 84, padding: 13}, summaryAmount: {fontFamily: F.x, fontSize: 19, marginTop: 6}, summaryHead: {alignItems: 'center', flexDirection: 'row', gap: 5}, summaryLabel: {color: C.muted, fontFamily: F.s, fontSize: 12}, summaryRow: {flexDirection: 'row', gap: 10, marginTop: 12}, title: {color: C.ink, fontFamily: F.x, fontSize: 24}, transaction: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, flexDirection: 'row', gap: 10, minHeight: 61, paddingHorizontal: 12, paddingVertical: 10}, transactionAmount: {fontFamily: F.x, fontSize: 12}, transactionIcon: {alignItems: 'center', borderRadius: 13, height: 38, justifyContent: 'center', width: 38}, transactionList: {gap: 9}, transactionMain: {alignItems: 'center', flex: 1, flexDirection: 'row', gap: 10}, transactionSub: {color: C.muted, fontFamily: F.r, fontSize: 12, marginTop: 2}, transactionSubRow: {alignItems: 'center', flexDirection: 'row', gap: 4}, transactionTitle: {color: C.ink, fontFamily: F.b, fontSize: 12}, sheet: {backgroundColor: '#fbfcf7', borderRadius: 24, maxHeight: '80%', maxWidth: 460, padding: 18, width: '92%'}, sheetCancel: {alignItems: 'center', borderRadius: 14, marginTop: 12, paddingVertical: 11}, sheetCancelText: {color: C.muted, fontFamily: F.b, fontSize: 12}, sheetHint: {color: '#8b948a', fontFamily: F.r, fontSize: 12, marginBottom: 12, marginTop: 3}, sheetOption: {alignItems: 'center', backgroundColor: '#f1f3ef', borderRadius: 99, flexDirection: 'row', gap: 6, paddingHorizontal: 11, paddingVertical: 8}, sheetOptionActive: {backgroundColor: '#5f875f'}, sheetOptionText: {color: '#6d786c', fontFamily: F.b, fontSize: 12}, sheetOptionTextActive: {color: '#fff'}, sheetOptions: {flexDirection: 'row', flexWrap: 'wrap', gap: 7}, sheetOverlay: {alignItems: 'center', backgroundColor: 'rgba(32, 40, 31, .58)', flex: 1, justifyContent: 'center', padding: 16}, sheetScroll: {maxHeight: 360}, sheetTitle: {color: C.ink, fontFamily: F.x, fontSize: 15},
