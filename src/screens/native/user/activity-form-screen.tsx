@@ -8,10 +8,12 @@ import ScheduleConflictDialog from '@/components/schedule-conflict-dialog';
 import ConfirmDialog from '@/components/confirm-dialog';
 
 import {runLegacyDataAction} from '@/services/legacy-data';
-import {findScheduleConflicts, transactions, type ScheduleConflict} from '@/services/firestore';
+import {findScheduleConflicts, type ScheduleConflict} from '@/services/firestore';
+import {exceedsAvailableFunds, monthFundsFor} from '@/services/transaction-funds';
+import {INCOME_SOURCES} from '@/config/income-sources';
 import {futureSuggestion} from '@/lib/ux-time';
 import {getActivitySuggestions, recommendationLevel, type ActivitySuggestion} from '@/services/smartlife-recommendations';
-import {shiftDateKey, thailandDateKey, thailandRange, thailandTimeKey, thailandWallClockToDate} from '@/lib/thailand-time';
+import {shiftDateKey, thailandDateKey, thailandTimeKey, thailandWallClockToDate} from '@/lib/thailand-time';
 import {showToast, toastMessage} from '@/components/app-toast';
 import {Card, MaterialIcon, PrimaryButton, UserHeader, UserShell, type UserNavigate, userStyles} from './user-ui';
 
@@ -264,16 +266,10 @@ export default function ActivityFormScreen({page, uid, onNavigate}: {page: FormP
     if (isTransaction && transactionType === 'expense') {
       setSaving(true);
       try {
-        const {from, to} = thailandRange('month', startDate);
-        const monthRows = await transactions.between(uid, from, to);
-        const totalOf = (kind: TransactionKind) => monthRows
-          .filter((row) => row.type === kind)
-          .reduce((sum, row) => sum + Math.abs(Number(row.amount ?? 0)), 0);
-        const income = totalOf('income');
-        const spent = totalOf('expense');
+        const funds = await monthFundsFor(uid, startDate);
         setSaving(false);
-        if (parsedAmount > income - spent) {
-          setFundsWarning({amount: parsedAmount, available: income - spent, income, payload, spent});
+        if (exceedsAvailableFunds(parsedAmount, funds)) {
+          setFundsWarning({amount: parsedAmount, available: funds.available, income: funds.income, payload, spent: funds.spent});
           return;
         }
       } catch {
@@ -425,7 +421,7 @@ export default function ActivityFormScreen({page, uid, onNavigate}: {page: FormP
 }
 
 function IncomeForm({amount, category, date, note, onBack, onNavigate, onSave, saving, setAmount, setCategory, setDate, setNote, setTime, setTitle, time, title}: {amount: string; category: string; date: string; note: string; onBack: () => void; onNavigate: UserNavigate; onSave: () => void; saving: boolean; setAmount: (value: string) => void; setCategory: (value: string) => void; setDate: (value: string) => void; setNote: (value: string) => void; setTime: (value: string) => void; setTitle: (value: string) => void; time: string; title: string}) {
-  const sources = [{icon: 'home', label: 'จากบ้าน', value: 'เงินโอน'}, {icon: 'work', label: 'งานพิเศษ', value: 'รายได้'}, {icon: 'account_balance', label: 'ทุน', value: 'ทุนการศึกษา'}, {icon: 'receipt_long', label: 'เงินคืน', value: 'คืนเงิน'}];
+  const sources = INCOME_SOURCES;
   const selected = sources.find((source) => source.value === category)?.value ?? sources[0].value;
   const [pickerTarget, setPickerTarget] = useState<'date' | 'time' | null>(null);
   const selectDateTime = (selectedDate?: Date | null) => {

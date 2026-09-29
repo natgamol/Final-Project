@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
 import {router, useLocalSearchParams} from 'expo-router';
 import {financeDate} from '@/lib/ux-time';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
@@ -11,7 +11,10 @@ import ConfirmDialog from '@/components/confirm-dialog';
 
 import {thailandRange, thailandDateKey, thailandCalendarParts} from '@/lib/thailand-time';
 import {calculateDailyAllowance, calculateFinanceBudgetInsight} from '@/services/dynamic-insights';
-import {loadLegacyPageData} from '@/services/legacy-data';
+import {loadLegacyPageData, runLegacyDataAction} from '@/services/legacy-data';
+import {exceedsAvailableFunds, monthFundsFor} from '@/services/transaction-funds';
+import {INCOME_SOURCES} from '@/config/income-sources';
+import {showToast, toastMessage} from '@/components/app-toast';
 import {currentMonthKey, loadMonthlyBudget} from '@/services/monthly-budget';
 import {transactions} from '@/services/firestore';
 import {EXPENSE_CATEGORIES, expenseCategoryIcon, normalizeExpenseCategory} from '@/config/expense-categories';
@@ -111,6 +114,7 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
   };
   const [deleting, setDeleting] = useState<Item | null>(null);
   const [deleteError, setDeleteError] = useState(false);
+  const [quickAddKind, setQuickAddKind] = useState<'income' | 'expense' | null>(null);
   const [recategorizing, setRecategorizing] = useState<Item | null>(null);
   const [categoryError, setCategoryError] = useState(false);
   const periodPage = `smartlife_finance_${period}` as 'smartlife_finance_day' | 'smartlife_finance_week' | 'smartlife_finance_month';
@@ -238,22 +242,39 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
         <View style={styles.balanceCard}><View style={styles.balanceCircle} /><View style={styles.balanceTop}><View><View style={styles.balanceLabelRow}><MaterialIcon color={C.accent} name="credit_card" size={14} /><Text style={styles.balanceLabel}>{mainLabel}</Text></View><AnimatedNumber format={money} style={styles.balanceAmount} value={mainAmount} /><Text style={styles.balancePeriod}>/ {periodText(periodPage)}</Text></View></View><View style={styles.progress}><View style={[styles.progressFill, {width: `${Math.min(expense / Math.max(income, expense, 1) * 100, 100)}%`}]} /></View><View style={styles.categoryTags}>{categoryTotals.length ? categoryTotals.map(([category, amount]) => <View key={category} style={styles.categoryTag}><Text style={styles.categoryTagText}>{category} {money(amount)}</Text></View>) : <View style={styles.categoryTag}><Text style={styles.categoryTagText}>ยังไม่มีค่าใช้จ่าย</Text></View>}</View></View>
 </Reveal>
 <Reveal index={5}>
+        {/* Logging a transaction is what people open this page to do, so it is
+            offered here, between the balance and the budget line, instead of
+            below the charts and the menu cards where it needed scrolling to
+            find. The sheet it opens keeps the page in place -- no navigation --
+            and the full form stays one tap further on for dates and notes. */}
+        <View style={styles.quickAddRow}>
+          <Touchable accessibilityLabel="เพิ่มรายรับอย่างเร็ว" accessibilityRole="button" onPress={() => setQuickAddKind('income')} style={[styles.quickAddPill, styles.quickAddPillIncome]}>
+            <MaterialIcon color={C.sage} name="add" size={17} />
+            <Text style={[styles.quickAddPillText, {color: C.sage}]}>รายรับ</Text>
+          </Touchable>
+          <Touchable accessibilityLabel="เพิ่มรายจ่ายอย่างเร็ว" accessibilityRole="button" onPress={() => setQuickAddKind('expense')} style={[styles.quickAddPill, styles.quickAddPillExpense]}>
+            <MaterialIcon color={C.red} name="add" size={17} />
+            <Text style={[styles.quickAddPillText, {color: C.red}]}>รายจ่าย</Text>
+          </Touchable>
+        </View>
+</Reveal>
+
+<Reveal index={6}>
         {budgetLine ? <Touchable onPress={() => onNavigate('smartlife_monthly_budget')} style={[styles.budgetStrip, budgetLine.over && styles.budgetStripOver]}>
           <View style={[styles.budgetStripIcon, budgetLine.over && styles.budgetStripIconOver]}><MaterialIcon color={budgetLine.over ? C.red : C.sage} name={budgetLine.over ? 'error' : 'savings'} size={17} /></View>
           <View style={{flex: 1}}><Text style={[styles.budgetStripTitle, budgetLine.over && styles.budgetStripTitleOver]}>{budgetLine.title}</Text><Text style={styles.budgetStripDetail}>{budgetLine.detail}</Text></View>
           <MaterialIcon color={C.muted} name="chevron_right" size={20} />
         </Touchable> : null}
 </Reveal>
-<Reveal index={6}>
+<Reveal index={7}>
         <View style={styles.summaryRow}>{filter === 'income' ? <><Summary amount={income} icon="north" label="รับแล้ว" tone="income" /><Summary amount={Math.max(0, income - shown.reduce((sum, item) => sum + Number(item.amount ?? 0), 0))} icon="schedule" label="รอรับ" tone="neutral" /></> : filter === 'expense' ? <><Summary amount={expense} icon="south" label="ใช้ไปแล้ว" tone="expense" /><Summary amount={Math.max(0, balance)} icon="schedule" label="เหลือ" tone="neutral" /></> : <><Summary amount={income} icon="north" label="รายรับ" tone="income" /><Summary amount={expense} icon="south" label="รายจ่าย" tone="expense" /></>}</View>
 </Reveal>
 
-<Reveal index={7}>
-        {/* Directly under the totals they relate to. These sat below the
-            charts, the budget card and the LINE card, which put them off the
-            first screen on a phone: the action people came to do was the one
-            thing they had to go looking for. */}
-        {filter !== 'expense' ? <Touchable onPress={() => onNavigate('smartlife_add_income')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
+<Reveal index={8}>
+        {/* Only the filtered views still carry these. On the overview the quick
+            add row above does the same job higher up the page, so keeping them
+            here would be the same action offered twice. */}
+        {filter === 'income' ? <Touchable onPress={() => onNavigate('smartlife_add_income')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
           <View style={[styles.menuIcon, {backgroundColor: C.sage}]}><MaterialIcon color="#fff" name="add_card" size={20} /></View>
           <View style={{flex: 1}}>
             <Text style={styles.menuTitle}>เพิ่มรายรับ</Text>
@@ -261,7 +282,7 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
           </View>
           <MaterialIcon color={C.ink} name="chevron_right" size={21} />
         </Touchable> : null}
-        {filter !== 'income' ? <Touchable onPress={() => onNavigate('smartlife_add_expense')} style={[styles.menuCard, {backgroundColor: '#fcedea'}]}>
+        {filter === 'expense' ? <Touchable onPress={() => onNavigate('smartlife_add_expense')} style={[styles.menuCard, {backgroundColor: '#fcedea'}]}>
           <View style={[styles.menuIcon, {backgroundColor: '#c96e68'}]}><MaterialIcon color="#fff" name="add_card" size={20} /></View>
           <View style={{flex: 1}}>
             <Text style={styles.menuTitle}>เพิ่มรายจ่ายเอง</Text>
@@ -271,11 +292,11 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
         </Touchable> : null}
 </Reveal>
 
-<Reveal index={8}>
+<Reveal index={9}>
         {period !== 'day' ? <SpendingCharts period={period} referenceDate={referenceDate} transactions={all} /> : null}
 </Reveal>
 
-<Reveal index={9}>
+<Reveal index={10}>
         <Touchable onPress={() => onNavigate('smartlife_monthly_budget')} style={[styles.menuCard, {backgroundColor: '#faecea', marginTop: 16}]}>
             <View style={[styles.menuIcon, {backgroundColor: '#d89182'}]}><MaterialIcon color="#fff" name="savings" size={20} /></View>
             <View style={{flex: 1}}>
@@ -286,7 +307,7 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
         </Touchable>
 </Reveal>
 
-<Reveal index={10}>
+<Reveal index={11}>
         <Touchable onPress={() => onNavigate('smartlife_line_bank')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
             <View style={[styles.menuIcon, {backgroundColor: '#72956f'}]}><MaterialIcon color="#fff" name="notifications_active" size={20} /></View>
             <View style={{flex: 1}}>
@@ -340,6 +361,13 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
       tone="neutral"
       visible={categoryError}
     />
+    <QuickAddSheet
+      kind={quickAddKind}
+      onClose={() => setQuickAddKind(null)}
+      onOpenFullForm={(page) => { setQuickAddKind(null); onNavigate(page); }}
+      onSaved={() => { setQuickAddKind(null); void load(); }}
+      uid={uid}
+    />
     <CategorySheet
       current={normalizeExpenseCategory(str(recategorizing ?? {}, 'category', ''))}
       onClose={() => setRecategorizing(null)}
@@ -351,6 +379,136 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
 
 function Summary({amount, icon, label, tone}: {amount: number; icon: string; label: string; tone: 'income' | 'expense' | 'neutral'}) { const color = tone === 'income' ? C.sage : tone === 'expense' ? C.red : C.ink; return <View style={styles.summary}><View style={styles.summaryHead}><MaterialIcon color={tone === 'expense' ? C.accent : C.sage} name={icon} size={15} /><Text style={styles.summaryLabel}>{label}</Text></View><AnimatedNumber format={money} style={[styles.summaryAmount, {color}]} value={amount} /></View>; }
 function TransactionRow({item, onDelete, onRecategorize}: {item: Item; onDelete: () => void; onRecategorize: () => void}) { const isIncome = item.type === 'income'; const category = normalizeExpenseCategory(str(item, 'category', '')); return <View style={styles.transaction}><Touchable accessibilityLabel={isIncome ? undefined : `เปลี่ยนหมวดหมู่ ปัจจุบัน ${category}`} accessibilityRole={isIncome ? undefined : 'button'} disabled={isIncome} onPress={onRecategorize} style={styles.transactionMain}><View style={[styles.transactionIcon, {backgroundColor: isIncome ? C.sageSoft : C.redSoft}]}><MaterialIcon color={isIncome ? C.sage : C.red} name={isIncome ? 'north' : categoryIcon(category)} size={18} /></View><View style={{flex: 1}}><Text numberOfLines={1} style={styles.transactionTitle}>{str(item, 'merchant', category)}</Text><View style={styles.transactionSubRow}><Text style={styles.transactionSub}>{category} · {date(item.occurredAt)}</Text>{isIncome ? null : <MaterialIcon color="#b3bcb2" name="edit" size={10} />}</View></View></Touchable><Text style={[styles.transactionAmount, {color: isIncome ? C.sage : C.red}]}>{isIncome ? '+' : '-'}{money(Number(item.amount ?? 0))}</Text><Touchable accessibilityLabel="ลบรายการ" onPress={onDelete} style={styles.delete}><MaterialIcon color="#ca7771" name="close" size={15} /></Touchable></View>; }
+
+/**
+ * Amount and category, and nothing else.
+ *
+ * Everything the full form offers beyond these two -- a date, a time, a note,
+ * a title -- has a sensible default for something being logged as it happens,
+ * so asking for them is what made recording a coffee a five-field errand. The
+ * link at the bottom hands the whole thing over to the full form for the times
+ * that is not true.
+ *
+ * It writes through the same `create-transaction` action the full form uses,
+ * so the amount parsing, the Bangkok timestamp and `source: 'manual_entry'`
+ * are the ones already in place rather than a second set living here, and it
+ * runs the same funds check before writing an expense.
+ */
+function QuickAddSheet({kind, onClose, onOpenFullForm, onSaved, uid}: {
+  kind: 'income' | 'expense' | null;
+  onClose: () => void;
+  onOpenFullForm: (page: string) => void;
+  onSaved: () => void;
+  uid: string;
+}) {
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [overspend, setOverspend] = useState<{amount: number; available: number} | null>(null);
+  const income = kind === 'income';
+  const choices = income
+    ? INCOME_SOURCES.map((source) => ({icon: source.icon, label: source.value}))
+    : EXPENSE_CATEGORIES.map((entry) => ({icon: entry.icon, label: entry.label}));
+
+  // Each opening starts clean, so yesterday's amount is never one tap from
+  // being saved again.
+  useEffect(() => {
+    if (!kind) return;
+    setAmount('');
+    setCategory('');
+    setOverspend(null);
+    setSaving(false);
+  }, [kind]);
+
+  const parsed = Number(amount.replace(/,/g, '').trim());
+  const ready = Number.isFinite(parsed) && parsed > 0 && Boolean(category);
+
+  const write = async () => {
+    setSaving(true);
+    try {
+      await runLegacyDataAction(uid, 'user/smartlife_finance_day', {
+        action: 'create-transaction',
+        payload: {
+          amount: parsed,
+          category,
+          merchant: category,
+          note: '',
+          occurredAt: new Date().toISOString(),
+          type: income ? 'income' : 'expense',
+        },
+      });
+      showToast('บันทึกแล้ว', `${income ? 'รายรับ' : 'รายจ่าย'} ${money(parsed)}`, 'success');
+      onSaved();
+    } catch (error) {
+      showToast('บันทึกไม่สำเร็จ', toastMessage(error, 'ลองใหม่อีกครั้ง'));
+      setSaving(false);
+    }
+  };
+
+  const save = async () => {
+    if (!ready || saving) return;
+    if (!income) {
+      setSaving(true);
+      try {
+        const funds = await monthFundsFor(uid, new Date());
+        if (exceedsAvailableFunds(parsed, funds)) {
+          setSaving(false);
+          setOverspend({amount: parsed, available: funds.available});
+          return;
+        }
+      } catch {
+        // A funds lookup that fails must not block a save the user asked for.
+      }
+      setSaving(false);
+    }
+    await write();
+  };
+
+  return <>
+    <Modal animationType="fade" onRequestClose={onClose} transparent visible={Boolean(kind) && !overspend}>
+      <Touchable accessibilityLabel="ปิดการเพิ่มรายการ" onPress={onClose} style={styles.sheetOverlay}>
+        <View onStartShouldSetResponder={() => true} style={styles.sheet}>
+          <Text style={styles.sheetTitle}>{income ? 'เพิ่มรายรับ' : 'เพิ่มรายจ่าย'}</Text>
+          <Text style={styles.sheetHint}>ใส่จำนวนเงินและเลือกหมวด แล้วบันทึกได้เลย ระบบใช้เวลาตอนนี้เป็นวันที่</Text>
+          <View style={styles.quickAmountShell}>
+            <Text style={styles.quickCurrency}>฿</Text>
+            <TextInput
+              autoFocus
+              keyboardType="numeric"
+              onChangeText={setAmount}
+              placeholder="0"
+              placeholderTextColor="#a8b0a6"
+              style={styles.quickAmountInput}
+              value={amount}
+            />
+          </View>
+          <Text style={styles.quickFieldLabel}>{income ? 'แหล่งที่มา' : 'หมวดรายจ่าย'}</Text>
+          <ScrollView contentContainerStyle={styles.sheetOptions} style={styles.sheetScroll}>
+            {choices.map((choice) => { const active = choice.label === category; return <Touchable accessibilityLabel={`เลือก ${choice.label}`} accessibilityRole="button" accessibilityState={{selected: active}} key={choice.label} onPress={() => setCategory(choice.label)} style={[styles.sheetOption, active && styles.sheetOptionActive]}><MaterialIcon color={active ? '#fff' : '#6d786c'} name={choice.icon} size={14} /><Text style={[styles.sheetOptionText, active && styles.sheetOptionTextActive]}>{choice.label}</Text></Touchable>; })}
+          </ScrollView>
+          <Touchable accessibilityLabel="บันทึก" accessibilityRole="button" disabled={!ready || saving} onPress={() => void save()} style={[styles.quickSave, income ? styles.quickSaveIncome : styles.quickSaveExpense, (!ready || saving) && styles.quickSaveOff]}>
+            {saving ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="check" size={18} />}
+            <Text style={styles.quickSaveText}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Text>
+          </Touchable>
+          <Touchable accessibilityLabel="กรอกรายละเอียดเพิ่มเติม" accessibilityRole="button" onPress={() => onOpenFullForm(income ? 'smartlife_add_income' : 'smartlife_add_expense')} style={styles.sheetCancel}>
+            <Text style={styles.quickFullLinkText}>ต้องการใส่วันที่ เวลา หรือโน้ต</Text>
+          </Touchable>
+          <Touchable accessibilityLabel="ยกเลิก" onPress={onClose} style={styles.sheetCancel}><Text style={styles.sheetCancelText}>ยกเลิก</Text></Touchable>
+        </View>
+      </Touchable>
+    </Modal>
+    <ConfirmDialog
+      cancelLabel="กลับไปแก้"
+      confirmLabel="บันทึกต่อ"
+      icon="account_balance_wallet"
+      message={overspend ? `เดือนนี้${overspend.available > 0 ? `เหลือใช้ได้ ${money(overspend.available)}` : 'ไม่เหลือให้ใช้แล้ว'} แต่รายการนี้ ${money(overspend.amount)} ตรวจจำนวนเงินอีกครั้งก่อนบันทึกไหม?` : undefined}
+      onCancel={() => setOverspend(null)}
+      onConfirm={() => { setOverspend(null); void write(); }}
+      title="รายจ่ายเกินเงินที่มี"
+      visible={Boolean(overspend)}
+    />
+  </>;
+}
 
 /** The saved-transaction twin of the scan screen's picker, on the same list. */
 function CategorySheet({current, onClose, onSelect, visible}: {current: string; onClose: () => void; onSelect: (category: string) => void; visible: boolean}) {
@@ -377,7 +535,7 @@ const styles = StyleSheet.create({
   budgetStripOver: {borderColor: C.redSoft},
   budgetStripTitle: {color: C.ink, fontFamily: F.b, fontSize: 12},
   budgetStripTitleOver: {color: C.red},
-  allLink: {color: C.accent, fontFamily: F.b, fontSize: 12}, balanceAmount: {color: C.ink, fontFamily: F.x, fontSize: 30, marginTop: 2}, balanceCard: {...shadow, backgroundColor: '#fff', borderRadius: 21, marginTop: 10, overflow: 'hidden', padding: 15}, balanceCircle: {backgroundColor: C.accentSoft, borderBottomLeftRadius: 58, height: 72, position: 'absolute', right: 0, top: 0, width: 72}, balanceLabel: {color: C.ink, fontFamily: F.b, fontSize: 12}, balanceLabelRow: {alignItems: 'center', flexDirection: 'row', gap: 6}, balancePeriod: {color: C.muted, fontFamily: F.s, fontSize: 12, marginLeft: 92, marginTop: -14}, budgetPlanner: {alignItems: 'center', backgroundColor: '#fff0e8', borderColor: '#f0cfc1', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 13, padding: 12}, budgetPlannerIcon: {alignItems: 'center', backgroundColor: '#c87964', borderRadius: 20, boxShadow: '0 5px 11px rgba(176,99,79,.20)', height: 40, justifyContent: 'center', width: 40}, budgetPlannerText: {color: '#8e6256', fontFamily: F.r, fontSize: 12, marginTop: 2}, budgetPlannerTitle: {color: '#56372e', fontFamily: F.b, fontSize: 12}, balanceTop: {flexDirection: 'row', justifyContent: 'space-between'}, categoryTag: {backgroundColor: '#f1f3ef', borderRadius: 99, paddingHorizontal: 9, paddingVertical: 5}, categoryTagText: {color: '#697669', fontFamily: F.b, fontSize: 12}, categoryTags: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10}, content: {padding: 20, paddingBottom: 26}, delete: {alignItems: 'center', height: 28, justifyContent: 'center', marginLeft: 2, width: 22}, empty: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, gap: 6, paddingVertical: 28}, emptyText: {color: C.muted, fontFamily: F.r, fontSize: 12}, eyebrow: {color: C.sage, fontFamily: F.b, fontSize: 12}, filterActive: {backgroundColor: C.accent}, filterBar: {backgroundColor: '#fff', borderRadius: 16, flexDirection: 'row', marginTop: 9, padding: 5}, filterItem: {alignItems: 'center', borderRadius: 12, flex: 1, paddingVertical: 8}, filterText: {color: C.muted, fontFamily: F.b, fontSize: 12}, filterTextActive: {color: '#fff'}, header: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'}, insight: {alignItems: 'center', backgroundColor: '#eef1fa', borderRadius: 18, flexDirection: 'row', gap: 10, marginTop: 14, padding: 12}, insightIcon: {alignItems: 'center', backgroundColor: C.accent, borderRadius: 20, height: 40, justifyContent: 'center', width: 40}, insightText: {color: '#7c8790', fontFamily: F.r, fontSize: 12, marginTop: 2}, insightTitle: {color: C.ink, fontFamily: F.b, fontSize: 12}, loading: {alignItems: 'center', gap: 9, paddingVertical: 80}, loadingText: {color: C.muted, fontFamily: F.r, fontSize: 12}, periodActive: {backgroundColor: C.ink}, periodBar: {backgroundColor: '#fff', borderRadius: 16, flexDirection: 'row', marginTop: 12, padding: 5}, periodItem: {alignItems: 'center', borderRadius: 12, flex: 1, paddingVertical: 9}, periodText: {color: C.muted, fontFamily: F.b, fontSize: 12}, periodTextActive: {color: '#fff'}, progress: {backgroundColor: '#e4e5ec', borderRadius: 99, height: 7, marginTop: 16, overflow: 'hidden'}, progressFill: {backgroundColor: C.accent, borderRadius: 99, height: 7}, rangeBar: {alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 8}, rangeButton: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, height: 36, justifyContent: 'center', width: 36}, rangeHint: {color: C.accent, fontFamily: F.b, fontSize: 12}, rangeLabel: {alignItems: 'center', flex: 1, justifyContent: 'center', minHeight: 36}, rangeToday: {color: C.ink, fontFamily: F.b, fontSize: 12, marginTop: 1}, receiptButton: {alignItems: 'center', backgroundColor: C.accent, borderRadius: 28, boxShadow: '0 7px 17px rgba(69,77,125,.25)', height: 54, justifyContent: 'center', width: 54}, safe: {backgroundColor: C.mist, flex: 1}, screen: {backgroundColor: C.mist, flex: 1}, sectionHead: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, marginTop: 17}, sectionTitle: {color: C.ink, fontFamily: F.x, fontSize: 14}, summary: {...shadow, backgroundColor: '#fff', borderRadius: 18, flex: 1, minHeight: 84, padding: 13}, summaryAmount: {fontFamily: F.x, fontSize: 19, marginTop: 6}, summaryHead: {alignItems: 'center', flexDirection: 'row', gap: 5}, summaryLabel: {color: C.muted, fontFamily: F.s, fontSize: 12}, summaryRow: {flexDirection: 'row', gap: 10, marginTop: 12}, title: {color: C.ink, fontFamily: F.x, fontSize: 24}, transaction: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, flexDirection: 'row', gap: 10, minHeight: 61, paddingHorizontal: 12, paddingVertical: 10}, transactionAmount: {fontFamily: F.x, fontSize: 12}, transactionIcon: {alignItems: 'center', borderRadius: 13, height: 38, justifyContent: 'center', width: 38}, transactionList: {gap: 9}, transactionMain: {alignItems: 'center', flex: 1, flexDirection: 'row', gap: 10}, transactionSub: {color: C.muted, fontFamily: F.r, fontSize: 12, marginTop: 2}, transactionSubRow: {alignItems: 'center', flexDirection: 'row', gap: 4}, transactionTitle: {color: C.ink, fontFamily: F.b, fontSize: 12}, sheet: {backgroundColor: '#fbfcf7', borderRadius: 24, maxHeight: '80%', maxWidth: 460, padding: 18, width: '92%'}, sheetCancel: {alignItems: 'center', borderRadius: 14, marginTop: 12, paddingVertical: 11}, sheetCancelText: {color: C.muted, fontFamily: F.b, fontSize: 12}, sheetHint: {color: '#8b948a', fontFamily: F.r, fontSize: 12, marginBottom: 12, marginTop: 3}, sheetOption: {alignItems: 'center', backgroundColor: '#f1f3ef', borderRadius: 99, flexDirection: 'row', gap: 6, paddingHorizontal: 11, paddingVertical: 8}, sheetOptionActive: {backgroundColor: '#5f875f'}, sheetOptionText: {color: '#6d786c', fontFamily: F.b, fontSize: 12}, sheetOptionTextActive: {color: '#fff'}, sheetOptions: {flexDirection: 'row', flexWrap: 'wrap', gap: 7}, sheetOverlay: {alignItems: 'center', backgroundColor: 'rgba(32, 40, 31, .58)', flex: 1, justifyContent: 'center', padding: 16}, sheetScroll: {maxHeight: 360}, sheetTitle: {color: C.ink, fontFamily: F.x, fontSize: 15},
+  allLink: {color: C.accent, fontFamily: F.b, fontSize: 12}, balanceAmount: {color: C.ink, fontFamily: F.x, fontSize: 30, marginTop: 2}, balanceCard: {...shadow, backgroundColor: '#fff', borderRadius: 21, marginTop: 10, overflow: 'hidden', padding: 15}, balanceCircle: {backgroundColor: C.accentSoft, borderBottomLeftRadius: 58, height: 72, position: 'absolute', right: 0, top: 0, width: 72}, balanceLabel: {color: C.ink, fontFamily: F.b, fontSize: 12}, balanceLabelRow: {alignItems: 'center', flexDirection: 'row', gap: 6}, balancePeriod: {color: C.muted, fontFamily: F.s, fontSize: 12, marginLeft: 92, marginTop: -14}, budgetPlanner: {alignItems: 'center', backgroundColor: '#fff0e8', borderColor: '#f0cfc1', borderRadius: 18, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 13, padding: 12}, budgetPlannerIcon: {alignItems: 'center', backgroundColor: '#c87964', borderRadius: 20, boxShadow: '0 5px 11px rgba(176,99,79,.20)', height: 40, justifyContent: 'center', width: 40}, budgetPlannerText: {color: '#8e6256', fontFamily: F.r, fontSize: 12, marginTop: 2}, budgetPlannerTitle: {color: '#56372e', fontFamily: F.b, fontSize: 12}, balanceTop: {flexDirection: 'row', justifyContent: 'space-between'}, categoryTag: {backgroundColor: '#f1f3ef', borderRadius: 99, paddingHorizontal: 9, paddingVertical: 5}, categoryTagText: {color: '#697669', fontFamily: F.b, fontSize: 12}, categoryTags: {flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10}, content: {padding: 20, paddingBottom: 26}, delete: {alignItems: 'center', height: 28, justifyContent: 'center', marginLeft: 2, width: 22}, empty: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, gap: 6, paddingVertical: 28}, emptyText: {color: C.muted, fontFamily: F.r, fontSize: 12}, eyebrow: {color: C.sage, fontFamily: F.b, fontSize: 12}, filterActive: {backgroundColor: C.accent}, filterBar: {backgroundColor: '#fff', borderRadius: 16, flexDirection: 'row', marginTop: 9, padding: 5}, filterItem: {alignItems: 'center', borderRadius: 12, flex: 1, paddingVertical: 8}, filterText: {color: C.muted, fontFamily: F.b, fontSize: 12}, filterTextActive: {color: '#fff'}, header: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'}, insight: {alignItems: 'center', backgroundColor: '#eef1fa', borderRadius: 18, flexDirection: 'row', gap: 10, marginTop: 14, padding: 12}, insightIcon: {alignItems: 'center', backgroundColor: C.accent, borderRadius: 20, height: 40, justifyContent: 'center', width: 40}, insightText: {color: '#7c8790', fontFamily: F.r, fontSize: 12, marginTop: 2}, insightTitle: {color: C.ink, fontFamily: F.b, fontSize: 12}, loading: {alignItems: 'center', gap: 9, paddingVertical: 80}, loadingText: {color: C.muted, fontFamily: F.r, fontSize: 12}, periodActive: {backgroundColor: C.ink}, periodBar: {backgroundColor: '#fff', borderRadius: 16, flexDirection: 'row', marginTop: 12, padding: 5}, periodItem: {alignItems: 'center', borderRadius: 12, flex: 1, paddingVertical: 9}, periodText: {color: C.muted, fontFamily: F.b, fontSize: 12}, periodTextActive: {color: '#fff'}, progress: {backgroundColor: '#e4e5ec', borderRadius: 99, height: 7, marginTop: 16, overflow: 'hidden'}, progressFill: {backgroundColor: C.accent, borderRadius: 99, height: 7}, quickAddPill: {alignItems: 'center', borderRadius: 14, borderWidth: 1, flex: 1, flexDirection: 'row', gap: 6, justifyContent: 'center', minHeight: 42}, quickAddPillExpense: {backgroundColor: C.redSoft, borderColor: 'rgba(219,103,98,.22)'}, quickAddPillIncome: {backgroundColor: C.sageSoft, borderColor: 'rgba(97,134,97,.22)'}, quickAddPillText: {fontFamily: F.b, fontSize: 12}, quickAddRow: {flexDirection: 'row', gap: 10, marginTop: 12}, quickAmountInput: {color: C.ink, flex: 1, fontFamily: F.x, fontSize: 26, paddingVertical: 10}, quickAmountShell: {alignItems: 'center', backgroundColor: '#f4f6f1', borderColor: '#e3e8df', borderRadius: 15, borderWidth: 1, flexDirection: 'row', gap: 8, marginBottom: 6, paddingHorizontal: 14}, quickCurrency: {color: C.muted, fontFamily: F.x, fontSize: 20}, quickFieldLabel: {color: C.ink, fontFamily: F.s, fontSize: 12, marginBottom: 8, marginTop: 8}, quickFullLinkText: {color: C.accent, fontFamily: F.b, fontSize: 12}, quickSave: {alignItems: 'center', borderRadius: 15, flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: 14, minHeight: 48}, quickSaveExpense: {backgroundColor: '#c96e68'}, quickSaveIncome: {backgroundColor: C.sage}, quickSaveOff: {opacity: .45}, quickSaveText: {color: '#fff', fontFamily: F.b, fontSize: 13}, rangeBar: {alignItems: 'center', flexDirection: 'row', gap: 8, marginTop: 8}, rangeButton: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, height: 36, justifyContent: 'center', width: 36}, rangeHint: {color: C.accent, fontFamily: F.b, fontSize: 12}, rangeLabel: {alignItems: 'center', flex: 1, justifyContent: 'center', minHeight: 36}, rangeToday: {color: C.ink, fontFamily: F.b, fontSize: 12, marginTop: 1}, receiptButton: {alignItems: 'center', backgroundColor: C.accent, borderRadius: 28, boxShadow: '0 7px 17px rgba(69,77,125,.25)', height: 54, justifyContent: 'center', width: 54}, safe: {backgroundColor: C.mist, flex: 1}, screen: {backgroundColor: C.mist, flex: 1}, sectionHead: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, marginTop: 17}, sectionTitle: {color: C.ink, fontFamily: F.x, fontSize: 14}, summary: {...shadow, backgroundColor: '#fff', borderRadius: 18, flex: 1, minHeight: 84, padding: 13}, summaryAmount: {fontFamily: F.x, fontSize: 19, marginTop: 6}, summaryHead: {alignItems: 'center', flexDirection: 'row', gap: 5}, summaryLabel: {color: C.muted, fontFamily: F.s, fontSize: 12}, summaryRow: {flexDirection: 'row', gap: 10, marginTop: 12}, title: {color: C.ink, fontFamily: F.x, fontSize: 24}, transaction: {alignItems: 'center', backgroundColor: '#fff', borderRadius: 18, flexDirection: 'row', gap: 10, minHeight: 61, paddingHorizontal: 12, paddingVertical: 10}, transactionAmount: {fontFamily: F.x, fontSize: 12}, transactionIcon: {alignItems: 'center', borderRadius: 13, height: 38, justifyContent: 'center', width: 38}, transactionList: {gap: 9}, transactionMain: {alignItems: 'center', flex: 1, flexDirection: 'row', gap: 10}, transactionSub: {color: C.muted, fontFamily: F.r, fontSize: 12, marginTop: 2}, transactionSubRow: {alignItems: 'center', flexDirection: 'row', gap: 4}, transactionTitle: {color: C.ink, fontFamily: F.b, fontSize: 12}, sheet: {backgroundColor: '#fbfcf7', borderRadius: 24, maxHeight: '80%', maxWidth: 460, padding: 18, width: '92%'}, sheetCancel: {alignItems: 'center', borderRadius: 14, marginTop: 12, paddingVertical: 11}, sheetCancelText: {color: C.muted, fontFamily: F.b, fontSize: 12}, sheetHint: {color: '#8b948a', fontFamily: F.r, fontSize: 12, marginBottom: 12, marginTop: 3}, sheetOption: {alignItems: 'center', backgroundColor: '#f1f3ef', borderRadius: 99, flexDirection: 'row', gap: 6, paddingHorizontal: 11, paddingVertical: 8}, sheetOptionActive: {backgroundColor: '#5f875f'}, sheetOptionText: {color: '#6d786c', fontFamily: F.b, fontSize: 12}, sheetOptionTextActive: {color: '#fff'}, sheetOptions: {flexDirection: 'row', flexWrap: 'wrap', gap: 7}, sheetOverlay: {alignItems: 'center', backgroundColor: 'rgba(32, 40, 31, .58)', flex: 1, justifyContent: 'center', padding: 16}, sheetScroll: {maxHeight: 360}, sheetTitle: {color: C.ink, fontFamily: F.x, fontSize: 15},
   menuCard: { alignItems: 'center', borderRadius: 18, flexDirection: 'row', gap: 12, marginTop: 10, padding: 14, borderColor: 'rgba(0,0,0,0.04)', borderWidth: 1 },
   menuIcon: { alignItems: 'center', borderRadius: 22, height: 44, justifyContent: 'center', width: 44, shadowColor: C.ink, shadowOffset: {width: 0, height: 5}, shadowOpacity: 0.1, shadowRadius: 11 },
   menuTitle: { color: C.ink, fontFamily: F.b, fontSize: 13 },

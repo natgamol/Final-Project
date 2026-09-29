@@ -9,7 +9,6 @@ import {Timestamp} from 'firebase/firestore';
 
 import {registerThaiCalendarLocale, THAI_MONTH_NAMES} from '@/lib/calendar-locale';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
-import {AddItemSheet} from '@/components/add-item-sheet';
 import GoogleCalendarSyncCard from '@/components/google-calendar-sync-card';
 import AiActivityRecommendationCard from '@/components/ai-activity-recommendation-card';
 import ConfirmDialog from '@/components/confirm-dialog';
@@ -146,7 +145,6 @@ function miniMonthDays(year: number, month: number) {
 export default function CalendarScreen({onNavigate, page, planner, uid}: Props) {
   const {maybeStartTour} = useTour();
   const {ref: importScheduleRef, onLayout: importScheduleOnLayout} = useTourTarget('calendar', 'import-schedule');
-  const {ref: addActivityRef, onLayout: addActivityOnLayout} = useTourTarget('calendar', 'add-activity');
   useEffect(() => {
     maybeStartTour('calendar');
   }, [maybeStartTour]);
@@ -156,7 +154,6 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
   // activity" -- a plain "+" icon with no visible label, so a first-time user
   // had no way to know it would not offer appointment/task/etc. They now open
   // the same choice sheet the tab bar's "+" already uses.
-  const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [today] = useState(todayKey);
   const [mode, setMode] = useState<ViewMode>(page === 'smartlife_calendar_month' ? 'month' : page === 'smartlife_calendar_week' ? 'week' : 'day');
   const [selectedDate, setSelectedDate] = useState(today);
@@ -493,7 +490,6 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
             <Touchable onPress={goToday}><Text style={styles.todayLink}>วันนี้</Text></Touchable>
             <View style={styles.topActions}>
               <Touchable accessibilityLabel="นำเข้าตารางเรียน" onLayout={importScheduleOnLayout} onPress={() => onNavigate('smartlife_scan_schedule')} ref={importScheduleRef} style={styles.circleButton}><MaterialIcon color={C.accent} name="document_scanner" size={20} /></Touchable>
-              <Touchable accessibilityLabel="เพิ่มรายการ" onPress={() => setAddSheetOpen(true)} style={styles.circleButton}><MaterialIcon color={C.accent} name="add" size={24} /></Touchable>
             </View>
           </View>
           <Text style={styles.largeTitle}>ปฏิทิน</Text>
@@ -523,8 +519,6 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
           {mode !== 'day' ? <View style={styles.agendaSection}><View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>{selectedDate === today ? 'วันนี้' : formatLongDate(selectedDate)}</Text><Text style={styles.sectionSub}>{selectedEvents.length ? `${selectedEvents.length} รายการ` : 'ไม่มีกิจกรรม'}</Text></View><Touchable onPress={() => setDetailsOpen(true)}><Text style={styles.seeAll}>ดูทั้งหมด</Text></Touchable></View><AgendaList completingId={completingId} events={selectedEvents} onComplete={(event) => void completeEvent(event)} onDelete={deleteEvent} onOpen={() => setDetailsOpen(true)} onPostpone={setPostponing} /></View> : null}
         </ScrollView>
 
-        <Touchable accessibilityLabel="เพิ่มรายการใหม่" accessibilityRole="button" onLayout={addActivityOnLayout} onPress={() => setAddSheetOpen(true)} ref={addActivityRef} style={({pressed}) => [styles.fab, pressed && styles.fabPressed]}><MaterialIcon color={C.accent} name="add" size={30} /></Touchable>
-        <AddItemSheet onClose={() => setAddSheetOpen(false)} onNavigate={onNavigate} visible={addSheetOpen} />
 
         <UserTabBar active={planner ? 'smartlife_planner' : 'smartlife_calendar_day'} onNavigate={onNavigate} />
 
@@ -779,8 +773,6 @@ const styles = StyleSheet.create({
   deleteButton: {alignItems: 'center', height: 36, justifyContent: 'center', width: 36},
   sheetAdd: {alignItems: 'center', backgroundColor: C.accent, borderRadius: 14, flexDirection: 'row', gap: 6, justifyContent: 'center', minHeight: 48},
   sheetAddText: {color: '#fff', fontFamily: F.b, fontSize: 12},
-  fab: {alignItems: 'center', backgroundColor: '#fff', borderColor: C.line, borderRadius: 28, borderWidth: 1, bottom: 78, boxShadow: '0 10px 22px rgba(55,86,54,.18)', height: 58, justifyContent: 'center', position: 'absolute', right: 20, width: 58, zIndex: 20},
-  fabPressed: {opacity: .86, transform: [{scale: .96}]},
   postponeChoice: {alignItems: 'center', backgroundColor: '#f6f8f4', borderRadius: 14, flexDirection: 'row', gap: 10, minHeight: 58, paddingHorizontal: 13},
   postponeChoiceCopy: {flex: 1, minWidth: 0},
   postponeChoiceDisabled: {opacity: .55},

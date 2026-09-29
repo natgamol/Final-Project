@@ -6,6 +6,7 @@ import ConfirmDialog from '@/components/confirm-dialog';
 import {ActivityIndicator, Animated, KeyboardAvoidingView, Modal, NativeModules, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
 import {Touchable} from '@/components/touchable';
 import {LinearGradient} from 'expo-linear-gradient';
+import {router} from 'expo-router';
 
 import {AsyncActionOverlay, type AsyncActionStatus} from '@/components/async-action-ui';
 import {Reveal} from '@/components/motion';
@@ -1874,12 +1875,23 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
   // the question here. `historyReady` gates this because `sendMessage` itself
   // silently no-ops before it (chat state has to load first), so it has to be
   // the effect's own dependency, not a one-time mount check.
+  // The ref alone only guards one mount. On web the parameter stays in the
+  // address bar after it is consumed, so leaving the tab and coming back
+  // remounts this screen with `autoAsk` still set and asks the question a
+  // second time -- which is what produced two identical bubbles nobody typed.
+  // Clearing the parameter is what actually makes it single-use: the ref keeps
+  // this mount honest, and the empty URL keeps every later one honest.
   const autoActionRanRef = useRef(false);
   useEffect(() => {
     if (autoActionRanRef.current || !historyReady || (!autoAsk && !autoListen)) return;
     autoActionRanRef.current = true;
     if (autoAsk) void sendMessage(autoAsk);
     else toggleVoiceInput();
+    // `setParams` rewrites the current route's query in place, so this drops
+    // the parameter without a navigation the user would see or could go back
+    // through. The re-render it causes re-enters the effect, which the ref
+    // above stops at the first line.
+    router.setParams({autoAsk: undefined, autoListen: undefined});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoAsk, autoListen, historyReady]);
 

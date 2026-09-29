@@ -116,8 +116,12 @@ const SECTIONS: Section[] = [
     icon: 'account_balance_wallet',
     id: 'finance',
     title: 'การเงิน (รายรับ-รายจ่าย)',
+    // The body tells the reader to press "+", so that is where the pointer
+    // goes. It pointed at the การเงิน tab instead, which is the one thing this
+    // section never asks anyone to tap -- the two sections either side of it
+    // give the same instruction and both already point at "+".
     visual: () => <>
-      <MiniTabBar highlight="smartlife_finance_day" />
+      <MiniTabBar highlight="plus" />
       <MiniAddMenu highlightPages={['smartlife_scan_schedule', 'smartlife_add_income']} />
     </>,
   },

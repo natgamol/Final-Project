@@ -55,12 +55,6 @@ export const TOUR_STEPS: Record<TourTabKey, TourStep[]> = {
       description: 'ถ่ายรูปหรือเลือกรูปตารางเรียน ให้ AI แปลงเป็นตารางในปฏิทินให้อัตโนมัติ',
       radius: 999,
     },
-    {
-      id: 'add-activity',
-      title: 'เพิ่มกิจกรรม',
-      description: 'แตะปุ่มนี้เพื่อเพิ่มกิจกรรมหรือนัดหมายใหม่ด้วยตัวเอง',
-      radius: 999,
-    },
   ],
   scan: [
     {
