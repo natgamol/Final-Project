@@ -249,33 +249,10 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
 </Reveal>
 
 <Reveal index={7}>
-        {period !== 'day' ? <SpendingCharts period={period} referenceDate={referenceDate} transactions={all} /> : null}
-</Reveal>
-
-<Reveal index={8}>
-        <Touchable onPress={() => onNavigate('smartlife_monthly_budget')} style={[styles.menuCard, {backgroundColor: '#faecea', marginTop: 16}]}>
-            <View style={[styles.menuIcon, {backgroundColor: '#d89182'}]}><MaterialIcon color="#fff" name="savings" size={20} /></View>
-            <View style={{flex: 1}}>
-              <Text style={styles.menuTitle}>{budgetCardTitle(period)}</Text>
-              <Text style={styles.menuSubtitle}>{budgetCardSubtitle(period, monthlyBudget)}</Text>
-            </View>
-            <MaterialIcon color={C.ink} name="chevron_right" size={21} />
-        </Touchable>
-</Reveal>
-
-<Reveal index={9}>
-        <Touchable onPress={() => onNavigate('smartlife_line_bank')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
-            <View style={[styles.menuIcon, {backgroundColor: '#72956f'}]}><MaterialIcon color="#fff" name="notifications_active" size={20} /></View>
-            <View style={{flex: 1}}>
-              <Text style={styles.menuTitle}>อ่านแจ้งเตือนการเงิน</Text>
-              <Text style={styles.menuSubtitle}>LINE และแอปธนาคารที่รองรับ • ตรวจเฉพาะรายการที่ไม่ชัดเจน</Text>
-            </View>
-            <MaterialIcon color={C.ink} name="chevron_right" size={21} />
-        </Touchable>
-</Reveal>
-
-        {/* The overview tab is where people land, so it offers both entries
-            rather than hiding each one behind its own filtered tab. */}
+        {/* Directly under the totals they relate to. These sat below the
+            charts, the budget card and the LINE card, which put them off the
+            first screen on a phone: the action people came to do was the one
+            thing they had to go looking for. */}
         {filter !== 'expense' ? <Touchable onPress={() => onNavigate('smartlife_add_income')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
           <View style={[styles.menuIcon, {backgroundColor: C.sage}]}><MaterialIcon color="#fff" name="add_card" size={20} /></View>
           <View style={{flex: 1}}>
@@ -292,6 +269,34 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
           </View>
           <MaterialIcon color={C.ink} name="chevron_right" size={21} />
         </Touchable> : null}
+</Reveal>
+
+<Reveal index={8}>
+        {period !== 'day' ? <SpendingCharts period={period} referenceDate={referenceDate} transactions={all} /> : null}
+</Reveal>
+
+<Reveal index={9}>
+        <Touchable onPress={() => onNavigate('smartlife_monthly_budget')} style={[styles.menuCard, {backgroundColor: '#faecea', marginTop: 16}]}>
+            <View style={[styles.menuIcon, {backgroundColor: '#d89182'}]}><MaterialIcon color="#fff" name="savings" size={20} /></View>
+            <View style={{flex: 1}}>
+              <Text style={styles.menuTitle}>{budgetCardTitle(period)}</Text>
+              <Text style={styles.menuSubtitle}>{budgetCardSubtitle(period, monthlyBudget)}</Text>
+            </View>
+            <MaterialIcon color={C.ink} name="chevron_right" size={21} />
+        </Touchable>
+</Reveal>
+
+<Reveal index={10}>
+        <Touchable onPress={() => onNavigate('smartlife_line_bank')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
+            <View style={[styles.menuIcon, {backgroundColor: '#72956f'}]}><MaterialIcon color="#fff" name="notifications_active" size={20} /></View>
+            <View style={{flex: 1}}>
+              <Text style={styles.menuTitle}>อ่านแจ้งเตือนการเงิน</Text>
+              <Text style={styles.menuSubtitle}>LINE และแอปธนาคารที่รองรับ • ตรวจเฉพาะรายการที่ไม่ชัดเจน</Text>
+            </View>
+            <MaterialIcon color={C.ink} name="chevron_right" size={21} />
+        </Touchable>
+</Reveal>
+
         {filter !== 'income' ? <Touchable onPress={() => onNavigate(SMART_SCAN_PAGE)} style={[styles.menuCard, {backgroundColor: '#eceef7'}]}>
           <View style={[styles.menuIcon, {backgroundColor: '#7a85b3'}]}><MaterialIcon color="#fff" name="receipt_long" size={20} /></View>
           <View style={{flex: 1}}>

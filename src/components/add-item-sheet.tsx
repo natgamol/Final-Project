@@ -1,4 +1,4 @@
-import {Modal, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {Touchable} from '@/components/touchable';
 
 // Not imported from `user-ui.tsx` on purpose: that file will import
@@ -27,7 +27,12 @@ export const ADD_ITEM_OPTIONS: AddItemOption[] = [
   {bg: '#e5efe2', icon: 'event', iconColor: '#52734b', page: 'smartlife_add_activity', subtitle: 'เพิ่มคลาส นัดหมาย หรือกิจกรรมที่มีเวลา', title: 'กิจกรรม/ตารางใหม่'},
   {bg: '#e3f0ef', icon: 'location_on', iconColor: '#3f8a82', page: 'smartlife_add_appointment', subtitle: 'นัดพบ นัดหมอ หรือธุระที่มีสถานที่และเวลา', title: 'นัดหมาย'},
   {bg: '#f3e8e8', icon: 'check_box', iconColor: '#bb7777', page: 'smartlife_add_task', subtitle: 'งานส่ง การบ้าน Quiz หรือสิ่งที่ AI Dynamic ต้องจัดลำดับ', title: 'เพิ่มงาน'},
-  {bg: '#eceef7', icon: 'account_balance_wallet', iconColor: '#6572ad', page: 'smartlife_add_income', subtitle: 'บันทึกเงินเข้าเอง ส่วนรายจ่ายใช้ Smart Scan หรือหน้าการเงิน', title: 'เพิ่มรายรับ'},
+  {bg: '#eceef7', icon: 'account_balance_wallet', iconColor: '#6572ad', page: 'smartlife_add_income', subtitle: 'บันทึกเงินเข้าเอง เช่น เงินเดือน เงินโอน หรือรายได้เสริม', title: 'เพิ่มรายรับ'},
+  // Manual expense entry used to be the one "add" this sheet did not offer, so
+  // the entry above had to send people to Smart Scan or the finance page to
+  // find it -- which is exactly where they could not find it. The red tone is
+  // the one the finance screen already gives expenses, so the two agree.
+  {bg: '#fcedea', icon: 'credit_card', iconColor: '#c96e68', page: 'smartlife_add_expense', subtitle: 'กรอกยอดและหมวดรายจ่ายเอง ไม่ต้องมีใบเสร็จ', title: 'เพิ่มรายจ่ายเอง'},
   {bg: '#f5e8e8', icon: 'edit_note', iconColor: '#bb7777', page: 'smartlife_add_note', subtitle: 'บันทึกไอเดียและเรื่องสำคัญ', title: 'โน้ตใหม่'},
 ];
 
@@ -43,16 +48,23 @@ export function AddItemSheet({visible, onClose, onNavigate}: {visible: boolean; 
           <View style={styles.sheetHandle} />
           <Text style={styles.sheetTitle}>เพิ่มรายการใหม่</Text>
           <Text style={styles.sheetSubtitle}>เลือกสิ่งที่คุณต้องการบันทึก</Text>
-          {ADD_ITEM_OPTIONS.map((option) => (
-            <Touchable key={option.page} onPress={() => open(option.page)} style={({pressed}) => [styles.sheetOption, pressed && styles.pressed]}>
-              <View style={[styles.sheetIcon, {backgroundColor: option.bg}]}><Icon color={option.iconColor} name={option.icon} size={22} /></View>
-              <View style={styles.sheetCopy}>
-                <Text style={styles.sheetOptionTitle}>{option.title}</Text>
-                <Text style={styles.sheetOptionSub}>{option.subtitle}</Text>
-              </View>
-              <Icon color="#8b988b" name="chevron_right" size={22} />
-            </Touchable>
-          ))}
+          {/* The sheet is anchored to the bottom of the screen, so content
+              taller than the viewport overflows upwards and takes the first
+              options with it -- unreachable, because nothing here scrolled.
+              Seven entries can reach that height on a short phone, so the list
+              scrolls and the sheet is capped instead. */}
+          <ScrollView showsVerticalScrollIndicator={false} style={styles.sheetList}>
+            {ADD_ITEM_OPTIONS.map((option) => (
+              <Touchable key={option.page} onPress={() => open(option.page)} style={({pressed}) => [styles.sheetOption, pressed && styles.pressed]}>
+                <View style={[styles.sheetIcon, {backgroundColor: option.bg}]}><Icon color={option.iconColor} name={option.icon} size={22} /></View>
+                <View style={styles.sheetCopy}>
+                  <Text style={styles.sheetOptionTitle}>{option.title}</Text>
+                  <Text style={styles.sheetOptionSub}>{option.subtitle}</Text>
+                </View>
+                <Icon color="#8b988b" name="chevron_right" size={22} />
+              </Touchable>
+            ))}
+          </ScrollView>
         </View>
       </Pressable>
     </Modal>
@@ -60,12 +72,13 @@ export function AddItemSheet({visible, onClose, onNavigate}: {visible: boolean; 
 }
 
 const styles = StyleSheet.create({
-  addSheet: {backgroundColor: '#fbfcf8', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 18, paddingBottom: 34, width: '100%'},
+  addSheet: {backgroundColor: '#fbfcf8', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '88%', padding: 18, paddingBottom: 34, width: '100%'},
   pressed: {opacity: .65, transform: [{translateY: -1}]},
   sheetBackdrop: {backgroundColor: 'rgba(20,31,20,.42)', flex: 1, justifyContent: 'flex-end'},
   sheetCopy: {flex: 1},
   sheetHandle: {alignSelf: 'center', backgroundColor: '#d8e0d6', borderRadius: 4, height: 4, marginBottom: 15, width: 42},
   sheetIcon: {alignItems: 'center', borderRadius: 15, height: 44, justifyContent: 'center', width: 44},
+  sheetList: {flexGrow: 0},
   sheetOption: {alignItems: 'center', backgroundColor: '#fff', borderColor: '#e8ede5', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 11, marginTop: 10, padding: 12},
   sheetOptionSub: {color: '#879087', fontFamily: 'Prompt_400Regular', fontSize: 12, lineHeight: 18, marginTop: 1},
   sheetOptionTitle: {color: '#2c341b', fontFamily: 'Prompt_700Bold', fontSize: 13},
