@@ -95,6 +95,42 @@ assert.deepEqual(
   'without a limit there is nothing to be over',
 );
 
+// --- Finance: spending past the money actually taken in is flagged with no
+// budget set at all, which is the gap the budget alerts above cannot cover.
+{
+  const overspent = buildNotificationFeed({
+    monthlyBudget: 0,
+    monthTransactions: [tx(100500, '2026-08-02T06:00:00Z', 'income'), tx(700000, '2026-08-10T06:00:00Z')],
+    now,
+    todayExpenses: [],
+  });
+  const funds = find(overspent, 'finance:funds');
+  assert.ok(funds, 'an expense past the month\'s income is flagged without any budget being set');
+  assert.equal(funds.severity, 'urgent', 'spending past the money on record is urgent');
+  assert.match(funds.message, /฿599,500/, 'the alert states the gap, not just that there is one');
+  assert.ok(
+    funds.reasons.some((reason) => reason.includes('รายการเดียว')),
+    'the single row big enough to cause it on its own is named',
+  );
+  assert.equal(
+    find(overspent, 'finance:month'), undefined,
+    'it is a funds alert, not a budget one: no limit was set to be over',
+  );
+
+  // Within income is silent, so the alert tracks the condition rather than
+  // simply appearing once any expense exists.
+  assert.equal(
+    find(buildNotificationFeed({
+      monthlyBudget: 0,
+      monthTransactions: [tx(100500, '2026-08-02T06:00:00Z', 'income'), tx(500, '2026-08-10T06:00:00Z')],
+      now,
+      todayExpenses: [],
+    }), 'finance:funds'),
+    undefined,
+    'spending inside the income on record says nothing',
+  );
+}
+
 // --- Calendar: an item due today is flagged with the same reasons the AI card
 // shows, and a completed one is not flagged at all.
 {

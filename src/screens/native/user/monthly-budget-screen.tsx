@@ -215,9 +215,19 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
         </View> : null}
 
         {financeInsight ? <View style={styles.card}>
-          <View style={styles.cardHeader}><View style={styles.cardIcon}><MaterialIcon color={C.accent} name="query_stats" size={20} /></View><View style={{flex: 1}}><Text style={styles.cardTitle}>AI Dynamic งบรายสัปดาห์</Text><Text style={styles.cardSub}>{pressureText(financeInsight.financePressureLevel)}</Text></View></View>
-          <View style={styles.recommendation}><Text style={styles.recommendationLabel}>กรอบสัปดาห์นี้</Text><Text style={styles.recommendationAmount}>{money(financeInsight.weeklyBudget)}</Text></View>
-          <View style={styles.recommendation}><Text style={styles.recommendationLabel}>ใช้แล้ว {financeInsight.weeklyUsagePercent}%</Text><Text style={styles.recommendationAmount}>{financeInsight.weeklyRemainingBudget < 0 ? `เกิน ${money(-financeInsight.weeklyRemainingBudget)}` : `เหลือ ${money(financeInsight.weeklyRemainingBudget)}`}</Text></View>
+          <View style={styles.cardHeader}><View style={styles.cardIcon}><MaterialIcon color={C.accent} name="query_stats" size={20} /></View><View style={{flex: 1}}><Text style={styles.cardTitle}>AI แบ่งงบให้แล้ว</Text><Text style={styles.cardSub}>{pressureText(financeInsight.financePressureLevel)}</Text></View></View>
+          {/* Both shares of the monthly limit, stated together and at full size
+              as soon as a budget exists. The weekly figure used to sit alone in
+              a small row and the daily one was never shown here at all -- it
+              was reachable only through the day pill on the finance screen, so
+              the split the AI had just made went unsaid on the screen that made
+              it. Editing the amount is untouched: the modes and the save button
+              below still work exactly as before. */}
+          <View style={styles.shareRow}>
+            <View style={styles.shareCell}><Text style={styles.shareLabel}>ใช้ได้สัปดาห์ละ</Text><Text style={styles.shareAmount}>{money(financeInsight.weeklyBudget)}</Text></View>
+            <View style={styles.shareCell}><Text style={styles.shareLabel}>ใช้ได้วันละ</Text><Text style={styles.shareAmount}>{money(financeInsight.averageDailyBudget)}</Text></View>
+          </View>
+          <View style={styles.recommendation}><Text style={styles.recommendationLabel}>สัปดาห์นี้ใช้แล้ว {financeInsight.weeklyUsagePercent}%</Text><Text style={styles.recommendationAmount}>{financeInsight.weeklyRemainingBudget < 0 ? `เกิน ${money(-financeInsight.weeklyRemainingBudget)}` : `เหลือ ${money(financeInsight.weeklyRemainingBudget)}`}</Text></View>
           <Text style={styles.inputHint}>ช่วง {financeInsight.weekStart} ถึง {financeInsight.weekEnd} • ระบบเตือนเมื่อใช้ถึง 80%</Text>
         </View> : null}
 
@@ -269,7 +279,7 @@ const styles = StyleSheet.create({
   progressFill: {borderRadius: 99, height: 10}, progressLabel: {color: C.ink, fontFamily: F.b, fontSize: 12}, progressTop: {alignItems: 'baseline', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 9}, progressTrack: {backgroundColor: '#e4e8e2', borderRadius: 99, height: 10, overflow: 'hidden'}, progressValue: {color: C.muted, fontFamily: F.s, fontSize: 12},
   recommendation: {alignItems: 'baseline', backgroundColor: '#f2f5ef', borderRadius: 15, flexDirection: 'row', justifyContent: 'space-between', marginTop: 15, paddingHorizontal: 13, paddingVertical: 11}, recommendationAmount: {color: C.ink, fontFamily: F.x, fontSize: 21}, recommendationLabel: {color: C.sage, fontFamily: F.b, fontSize: 12},
   retryButton: {backgroundColor: '#fff', borderRadius: 11, paddingHorizontal: 12, paddingVertical: 8}, retryText: {color: C.red, fontFamily: F.b, fontSize: 12},
-  safe: {backgroundColor: C.mist, flex: 1}, save: {alignItems: 'center', borderRadius: 17, flexDirection: 'row', gap: 8, height: 54, justifyContent: 'center'}, saveShell: {...shadow, borderRadius: 17, marginTop: 15, overflow: 'hidden'}, saveText: {color: '#fff', fontFamily: F.b, fontSize: 13}, screen: {backgroundColor: C.mist, flex: 1}, split: {marginTop: 13}, splitAmount: {color: C.ink, fontFamily: F.b, fontSize: 12}, splitFill: {borderRadius: 99, height: 9}, splitLabel: {color: C.muted, fontFamily: F.s, fontSize: 12}, splitTop: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6}, splitTrack: {backgroundColor: '#e4e8e2', borderRadius: 99, height: 9, overflow: 'hidden'},
+  safe: {backgroundColor: C.mist, flex: 1}, save: {alignItems: 'center', borderRadius: 17, flexDirection: 'row', gap: 8, height: 54, justifyContent: 'center'}, saveShell: {...shadow, borderRadius: 17, marginTop: 15, overflow: 'hidden'}, saveText: {color: '#fff', fontFamily: F.b, fontSize: 13}, screen: {backgroundColor: C.mist, flex: 1}, shareAmount: {color: C.ink, fontFamily: F.x, fontSize: 24, marginTop: 3}, shareCell: {alignItems: 'center', backgroundColor: '#f2f5ef', borderRadius: 15, flex: 1, paddingHorizontal: 11, paddingVertical: 14}, shareLabel: {color: C.sage, fontFamily: F.b, fontSize: 12}, shareRow: {flexDirection: 'row', gap: 10, marginTop: 15}, split: {marginTop: 13}, splitAmount: {color: C.ink, fontFamily: F.b, fontSize: 12}, splitFill: {borderRadius: 99, height: 9}, splitLabel: {color: C.muted, fontFamily: F.s, fontSize: 12}, splitTop: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6}, splitTrack: {backgroundColor: '#e4e8e2', borderRadius: 99, height: 9, overflow: 'hidden'},
   statusInline: {alignItems: 'center', borderRadius: 13, flexDirection: 'row', gap: 8, marginTop: 13, padding: 11}, statusInlineText: {flex: 1, fontFamily: F.b, fontSize: 12},
   title: {color: C.ink, fontFamily: F.x, fontSize: 20}, unsavedHint: {color: C.amber, fontFamily: F.m, fontSize: 12, marginTop: 9, textAlign: 'center'},
 });

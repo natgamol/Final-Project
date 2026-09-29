@@ -73,7 +73,7 @@ function toneFor(kind: Notification['kind']) {
   return {bg: '#eef5ed', fg: '#6f8f6d', icon: 'notifications'};
 }
 
-function Header({onNavigate, meta, onMarkAllRead, markingAll}: {markingAll: boolean; meta: typeof pageMeta[Page]; onMarkAllRead: () => void; onNavigate: UserNavigate}) {
+function Header({onNavigate, meta}: {meta: typeof pageMeta[Page]; onNavigate: UserNavigate}) {
   return (
     <View style={styles.header}>
       <Touchable onPress={() => onNavigate('smartlife_ai_assistant')} style={styles.headerButton}>
@@ -83,9 +83,6 @@ function Header({onNavigate, meta, onMarkAllRead, markingAll}: {markingAll: bool
         <Text style={styles.eyebrow}>{meta.eyebrow}</Text>
         <Text style={styles.title}>{meta.title}</Text>
       </View>
-      <Touchable accessibilityLabel="อ่านทั้งหมด" disabled={markingAll} onPress={onMarkAllRead} style={styles.headerButton}>
-        <MaterialIcon color="#26321f" name="done_all" size={20} />
-      </Touchable>
     </View>
   );
 }
@@ -248,7 +245,6 @@ function Chip({children, tone}: {children: string; tone: 'green' | 'purple' | 'r
 
 export default function NotificationsScreen({page, uid, onNavigate}: {page: Page; uid: string; onNavigate: UserNavigate}) {
   const [model, setModel] = useState<ViewModel | null>(null);
-  const [markingAll, setMarkingAll] = useState(false);
   const meta = pageMeta[page];
 
   // The same three sources the dashboard bell counts, gathered here so the list
@@ -307,25 +303,9 @@ export default function NotificationsScreen({page, uid, onNavigate}: {page: Page
     if (target) onNavigate(target);
   };
 
-  // Only stored items carry a read flag; a derived alert has nothing to mark.
-  const markAllRead = async () => {
-    const unreadStored = (model?.feed ?? []).filter((item) => item.source === 'stored' && item.unread);
-    if (!unreadStored.length || markingAll) return;
-    setMarkingAll(true);
-    try {
-      await Promise.all(unreadStored.map((item) => notifications.markRead(uid, item.id.replace('stored:', ''))));
-      setModel((current) => current ? {
-        ai: current.ai,
-        feed: current.feed.map((entry) => entry.source === 'stored' ? {...entry, unread: false} : entry),
-      } : current);
-    } finally {
-      setMarkingAll(false);
-    }
-  };
-
   return (
     <UserShell active="index" onNavigate={onNavigate}>
-      <Header markingAll={markingAll} meta={meta} onMarkAllRead={() => void markAllRead()} onNavigate={onNavigate} />
+      <Header meta={meta} onNavigate={onNavigate} />
       {model === null ? (
         <View style={styles.loading}>
           <ActivityIndicator color="#6f966f" size="large" />

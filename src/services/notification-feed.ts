@@ -218,6 +218,56 @@ function financeAlerts(insight: FinanceBudgetInsight | null, allowance: DailyAll
   return alerts;
 }
 
+/**
+ * Spending measured against money actually received, rather than against a
+ * limit the user chose.
+ *
+ * `financeAlerts` above returns nothing at all until a monthly budget exists,
+ * so an account that never set one -- or set one far larger than it really
+ * earns -- stayed silent while a single expense dwarfed every baht taken in.
+ * This check needs no budget. It reads the same month-scoped transactions the
+ * callers already pass, which is why it covers every write path at once: manual
+ * entry, the rows the assistant writes, and receipts saved server-side by the
+ * `saveReviewedReceipt` function, which never touches `transactions.create`.
+ *
+ * Amounts are stored positive with the direction carried by `type`, so the
+ * totals below compare like with like.
+ */
+function fundsAlerts(transactions: Pick<Transaction, 'amount' | 'occurredAt' | 'type'>[]): FeedItem[] {
+  const value = (item: {amount?: number}) => Math.abs(Number(item.amount ?? 0));
+  const total = (kind: Transaction['type']) => transactions
+    .filter((item) => item.type === kind)
+    .reduce((sum, item) => sum + value(item), 0);
+  const income = total('income');
+  const expense = total('expense');
+
+  // Income has to be on record for this to mean anything. With none logged the
+  // available balance is unknown rather than zero -- plenty of people track
+  // only what they spend -- and claiming they had overspent would be a guess.
+  // The reported case had ฿100,500 of income on record, so it is covered.
+  if (income <= 0 || expense <= income) return [];
+
+  // The single row most responsible is named, because the case this was built
+  // for was one mistyped entry rather than a month of gradual drift.
+  const expenses = transactions.filter((item) => item.type === 'expense');
+  const largest = expenses.reduce((top, item) => (value(item) > value(top) ? item : top));
+  const reasons = [`รายรับเดือนนี้ ${money(income)} · รายจ่าย ${money(expense)}`];
+  if (value(largest) > income) {
+    reasons.push(`รายการเดียวที่ ${money(value(largest))} ก็เกินรายรับทั้งเดือนแล้ว`);
+  }
+
+  return [{
+    id: 'finance:funds',
+    kind: 'finance',
+    message: `ใช้ไป ${money(expense)} แต่รับเข้ามา ${money(income)} เกินเงินที่มีอยู่ ${money(expense - income)}`,
+    reasons,
+    severity: 'urgent',
+    source: 'finance',
+    title: 'รายจ่ายเกินเงินที่มี',
+    unread: true,
+  }];
+}
+
 function storedAlerts(stored: WithId<Notification>[]): FeedItem[] {
   return stored.map((item) => ({
     id: `stored:${item.id}`,
@@ -259,6 +309,7 @@ export function buildNotificationFeed({activities, monthlyBudget, monthTransacti
 
   return [
     ...financeAlerts(insight, allowance, tension),
+    ...fundsAlerts(transactions),
     ...calendarAlerts(itemsOf(activities), now),
     ...noteAlerts(itemsOf(notes)),
     ...storedAlerts(stored),

@@ -5,12 +5,13 @@ import Animated, {useAnimatedStyle, useSharedValue, withSequence, withSpring, wi
 import {LinearGradient} from 'expo-linear-gradient';
 import NativeDateTimePicker from '@/components/date-time-picker';
 import ScheduleConflictDialog from '@/components/schedule-conflict-dialog';
+import ConfirmDialog from '@/components/confirm-dialog';
 
 import {runLegacyDataAction} from '@/services/legacy-data';
-import {findScheduleConflicts, type ScheduleConflict} from '@/services/firestore';
+import {findScheduleConflicts, transactions, type ScheduleConflict} from '@/services/firestore';
 import {futureSuggestion} from '@/lib/ux-time';
 import {getActivitySuggestions, recommendationLevel, type ActivitySuggestion} from '@/services/smartlife-recommendations';
-import {shiftDateKey, thailandDateKey, thailandTimeKey, thailandWallClockToDate} from '@/lib/thailand-time';
+import {shiftDateKey, thailandDateKey, thailandRange, thailandTimeKey, thailandWallClockToDate} from '@/lib/thailand-time';
 import {showToast, toastMessage} from '@/components/app-toast';
 import {Card, MaterialIcon, PrimaryButton, UserHeader, UserShell, type UserNavigate, userStyles} from './user-ui';
 
@@ -20,6 +21,10 @@ type FormMode = 'manual' | 'ai';
 type EntryMode = 'event' | 'reminder';
 type TransactionKind = 'income' | 'expense';
 type PriorityValue = 'normal' | 'important' | 'urgent';
+/** What the funds check needs to explain itself, held while the user decides. */
+type FundsWarning = {amount: number; available: number; income: number; payload: Record<string, unknown>; spent: number};
+
+function baht(value: number) { return `฿${Math.round(Math.abs(value)).toLocaleString('th-TH')}`; }
 
 const colors = ['#5f875f', '#9297bb', '#d06d62', '#d9a844', '#6c9db6', '#ad7cae'];
 const activityTypes: {icon: string; label: string; value: ActivityKind}[] = [
@@ -150,6 +155,7 @@ export default function ActivityFormScreen({page, uid, onNavigate}: {page: FormP
   const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [pendingConflictSave, setPendingConflictSave] = useState<{conflicts: ScheduleConflict[]; endAt: string; payload: Record<string, unknown>; startAt: string} | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fundsWarning, setFundsWarning] = useState<FundsWarning | null>(null);
   const isTransaction = form.action === 'create-transaction';
   const copy = activityCopy[isTransaction ? 'activity' : activityType];
 
@@ -249,6 +255,33 @@ export default function ActivityFormScreen({page, uid, onNavigate}: {page: FormP
       }
       setSaving(false);
     }
+    // An expense bigger than the money actually taken in this month is worth a
+    // second look before it lands. The reported case was a mistyped ฿700,000
+    // against ฿100,500 of income, which no budget alert could catch because no
+    // budget had been set at all. The notification feed now carries the same
+    // check after the fact; this one is here so the typo can be fixed while the
+    // form is still open, rather than found on a later visit to the bell.
+    if (isTransaction && transactionType === 'expense') {
+      setSaving(true);
+      try {
+        const {from, to} = thailandRange('month', startDate);
+        const monthRows = await transactions.between(uid, from, to);
+        const totalOf = (kind: TransactionKind) => monthRows
+          .filter((row) => row.type === kind)
+          .reduce((sum, row) => sum + Math.abs(Number(row.amount ?? 0)), 0);
+        const income = totalOf('income');
+        const spent = totalOf('expense');
+        setSaving(false);
+        if (parsedAmount > income - spent) {
+          setFundsWarning({amount: parsedAmount, available: income - spent, income, payload, spent});
+          return;
+        }
+      } catch {
+        // A lookup that fails must not block a save the user asked for. The
+        // feed still raises the alert once the transaction is written.
+        setSaving(false);
+      }
+    }
     await commitPayload(payload);
   };
 
@@ -275,7 +308,19 @@ export default function ActivityFormScreen({page, uid, onNavigate}: {page: FormP
   };
 
   if (isTransaction && transactionType === 'income') return <IncomeForm amount={amount} category={category} date={date} note={note} onBack={() => onNavigate('smartlife_finance_day')} onNavigate={onNavigate} onSave={save} saving={saving} setAmount={setAmount} setCategory={setCategory} setDate={setDate} setNote={setNote} setTime={setTime} setTitle={setTitle} time={time} title={title} />;
-  if (isTransaction) return <ExpenseForm amount={amount} category={category} date={date} note={note} onBack={() => onNavigate('smartlife_finance_day')} onNavigate={onNavigate} onSave={save} saving={saving} setAmount={setAmount} setCategory={setCategory} setDate={setDate} setNote={setNote} setTime={setTime} setTitle={setTitle} time={time} title={title} />;
+  if (isTransaction) return <>
+    <ExpenseForm amount={amount} category={category} date={date} note={note} onBack={() => onNavigate('smartlife_finance_day')} onNavigate={onNavigate} onSave={save} saving={saving} setAmount={setAmount} setCategory={setCategory} setDate={setDate} setNote={setNote} setTime={setTime} setTitle={setTitle} time={time} title={title} />
+    <ConfirmDialog
+      cancelLabel="กลับไปแก้"
+      confirmLabel="บันทึกต่อ"
+      icon="account_balance_wallet"
+      message={fundsWarning ? `เดือนนี้รับเข้ามา ${baht(fundsWarning.income)} ใช้ไปแล้ว ${baht(fundsWarning.spent)} ${fundsWarning.available > 0 ? `เหลือใช้ได้ ${baht(fundsWarning.available)}` : 'ไม่เหลือให้ใช้แล้ว'} แต่รายการนี้ ${baht(fundsWarning.amount)} ตรวจจำนวนเงินอีกครั้งก่อนบันทึกไหม?` : undefined}
+      onCancel={() => setFundsWarning(null)}
+      onConfirm={() => { const pending = fundsWarning; setFundsWarning(null); if (pending) void commitPayload(pending.payload); }}
+      title="รายจ่ายเกินเงินที่มี"
+      visible={Boolean(fundsWarning)}
+    />
+  </>;
 
   if (false && isTransaction) return <UserShell active="smartlife_finance_day" onNavigate={onNavigate}>
     <UserHeader onNavigate={onNavigate} subtitle="บันทึกข้อมูลลง Firebase" title={form.title} />

@@ -13,7 +13,7 @@ import {
   updateProfile,
   User,
 } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
@@ -235,6 +235,47 @@ export async function signOutCurrentUser() {
     AsyncStorage.removeItem('smartlife:last-ocr:schedule'),
     clearGoogleCalendarSession(),
   ]);
+}
+
+/**
+ * The two profile fields the user can change after registering.
+ *
+ * Each one lives in two places: Firebase Auth, which is what `displayName` and
+ * `photoURL` mean to the rest of the SDK, and the `users/{uid}` document, which
+ * is what the screens actually read through `loadLegacyPageData`. Writing only
+ * one of them leaves the app showing the old value, so both move together here
+ * rather than at each call site.
+ *
+ * The Firestore rule for this document accepts a change to `displayName`,
+ * `avatarUrl` and `updatedAt` and nothing else, and requires a name of 1-80
+ * characters and an avatar that is empty or an https URL. Both are checked
+ * before the write so a rejection surfaces as a readable message rather than a
+ * bare permission error.
+ */
+export async function updateProfileDetails({avatarUrl, displayName}: {avatarUrl?: string; displayName?: string}) {
+  if (isDemoMode) return;
+  requireFirebaseConfig();
+  const user = auth.currentUser;
+  if (!user) throw new Error('กรุณาเข้าสู่ระบบก่อนแก้ไขโปรไฟล์');
+
+  const name = displayName?.trim();
+  if (displayName !== undefined) {
+    if (!name) throw new Error('กรุณากรอกชื่อที่แสดง');
+    if (name.length > 80) throw new Error('ชื่อที่แสดงต้องยาวไม่เกิน 80 ตัวอักษร');
+  }
+  if (avatarUrl !== undefined && avatarUrl !== '' && !avatarUrl.startsWith('https://')) {
+    throw new Error('ลิงก์รูปโปรไฟล์ไม่ถูกต้อง');
+  }
+
+  await updateProfile(user, {
+    ...(name === undefined ? {} : {displayName: name}),
+    ...(avatarUrl === undefined ? {} : {photoURL: avatarUrl}),
+  });
+  await updateDoc(doc(db, 'users', user.uid), {
+    ...(name === undefined ? {} : {displayName: name}),
+    ...(avatarUrl === undefined ? {} : {avatarUrl}),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function getUserRole(user: User): Promise<AppRole> {

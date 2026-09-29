@@ -36,6 +36,25 @@ function str(item: Item, key: string, fallback = '-') { const value = item[key];
 function money(value: number) { return `${value < 0 ? '-' : ''}฿${Math.abs(value).toLocaleString('th-TH')}`; }
 function date(value: unknown) { const result = new Date(String(value ?? '')); return Number.isNaN(result.getTime()) ? '-' : new Intl.DateTimeFormat('th-TH', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok'}).format(result); }
 function periodText(page: Page) { return page === 'smartlife_finance_week' ? 'สัปดาห์นี้' : page === 'smartlife_finance_month' ? 'เดือนนี้' : 'วันนี้'; }
+// The budget card always sets one monthly limit, whichever tab is open. Only
+// the wording follows the tab, so the split it promises is the one the user is
+// actually looking at instead of always naming the weekly frame.
+function budgetCardTitle(period: Period) {
+  if (period === 'day') return 'กำหนดงบรายวัน';
+  if (period === 'month') return 'กำหนดขอบเขตการใช้';
+  return 'กำหนดงบและกรอบรายสัปดาห์';
+}
+function budgetCardSubtitle(period: Period, budget: {amount: number; rolledOver: boolean} | null) {
+  if (!budget) {
+    if (period === 'day') return 'ตั้งวงเงิน แล้ว AI แบ่งเป็นงบรายวันให้';
+    if (period === 'month') return 'ตั้งวงเงิน แล้ว AI คุมยอดรวมทั้งเดือน';
+    return 'ตั้งวงเงิน แล้ว AI คุมยอดรวมเป็นรายสัปดาห์';
+  }
+  const limit = `วงเงินเดือน ${money(budget.amount)}${budget.rolledOver ? ' (ต่อจากเดือนก่อน รอยืนยัน)' : ''}`;
+  if (period === 'day') return `${limit} · AI แบ่งให้เป็นงบรายวัน`;
+  if (period === 'month') return `${limit} · AI คุมยอดรวมทั้งเดือน`;
+  return `${limit} · AI แบ่งให้เป็นรายสัปดาห์`;
+}
 function periodForPage(page: string): 'day' | 'week' | 'month' {
   return page.includes('_month') ? 'month' : page.includes('_week') ? 'week' : 'day';
 }
@@ -237,8 +256,8 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
         <Touchable onPress={() => onNavigate('smartlife_monthly_budget')} style={[styles.menuCard, {backgroundColor: '#faecea', marginTop: 16}]}>
             <View style={[styles.menuIcon, {backgroundColor: '#d89182'}]}><MaterialIcon color="#fff" name="savings" size={20} /></View>
             <View style={{flex: 1}}>
-              <Text style={styles.menuTitle}>กำหนดงบและกรอบรายสัปดาห์</Text>
-              <Text style={styles.menuSubtitle}>{monthlyBudget ? `วงเงินเดือน ${money(monthlyBudget.amount)}${monthlyBudget.rolledOver ? ' (ต่อจากเดือนก่อน รอยืนยัน)' : ''} · AI แบ่งให้เป็นรายสัปดาห์` : 'ตั้งวงเงิน แล้ว AI คุมยอดรวมเป็นรายสัปดาห์'}</Text>
+              <Text style={styles.menuTitle}>{budgetCardTitle(period)}</Text>
+              <Text style={styles.menuSubtitle}>{budgetCardSubtitle(period, monthlyBudget)}</Text>
             </View>
             <MaterialIcon color={C.ink} name="chevron_right" size={21} />
         </Touchable>
@@ -255,31 +274,32 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
         </Touchable>
 </Reveal>
 
-        {filter === 'income' ? <Touchable onPress={() => onNavigate('smartlife_add_income')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
+        {/* The overview tab is where people land, so it offers both entries
+            rather than hiding each one behind its own filtered tab. */}
+        {filter !== 'expense' ? <Touchable onPress={() => onNavigate('smartlife_add_income')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
           <View style={[styles.menuIcon, {backgroundColor: C.sage}]}><MaterialIcon color="#fff" name="add_card" size={20} /></View>
           <View style={{flex: 1}}>
             <Text style={styles.menuTitle}>เพิ่มรายรับ</Text>
             <Text style={styles.menuSubtitle}>กรอกจำนวน หมวดหมู่ วันที่ และโน้ตด้วยตัวเอง</Text>
           </View>
           <MaterialIcon color={C.ink} name="chevron_right" size={21} />
-        </Touchable> : <>
-          {filter === 'expense' ? <Touchable onPress={() => onNavigate('smartlife_add_expense')} style={[styles.menuCard, {backgroundColor: '#fcedea'}]}>
-            <View style={[styles.menuIcon, {backgroundColor: '#c96e68'}]}><MaterialIcon color="#fff" name="add_card" size={20} /></View>
-            <View style={{flex: 1}}>
-              <Text style={styles.menuTitle}>เพิ่มรายจ่ายเอง</Text>
-              <Text style={styles.menuSubtitle}>เลือกหมวดหลัก หรือตั้งชื่อหมวดรายจ่ายของคุณเอง</Text>
-            </View>
-            <MaterialIcon color={C.ink} name="chevron_right" size={21} />
-          </Touchable> : null}
-          <Touchable onPress={() => onNavigate(SMART_SCAN_PAGE)} style={[styles.menuCard, {backgroundColor: '#eceef7'}]}>
-            <View style={[styles.menuIcon, {backgroundColor: '#7a85b3'}]}><MaterialIcon color="#fff" name="receipt_long" size={20} /></View>
-            <View style={{flex: 1}}>
-              <Text style={styles.menuTitle}>สแกนใบเสร็จ</Text>
-              <Text style={styles.menuSubtitle}>ให้ AI แยกหมวดรายจ่ายให้อัตโนมัติ</Text>
-            </View>
-            <MaterialIcon color={C.ink} name="chevron_right" size={21} />
-          </Touchable>
-        </>}
+        </Touchable> : null}
+        {filter !== 'income' ? <Touchable onPress={() => onNavigate('smartlife_add_expense')} style={[styles.menuCard, {backgroundColor: '#fcedea'}]}>
+          <View style={[styles.menuIcon, {backgroundColor: '#c96e68'}]}><MaterialIcon color="#fff" name="add_card" size={20} /></View>
+          <View style={{flex: 1}}>
+            <Text style={styles.menuTitle}>เพิ่มรายจ่ายเอง</Text>
+            <Text style={styles.menuSubtitle}>เลือกหมวดหลัก หรือตั้งชื่อหมวดรายจ่ายของคุณเอง</Text>
+          </View>
+          <MaterialIcon color={C.ink} name="chevron_right" size={21} />
+        </Touchable> : null}
+        {filter !== 'income' ? <Touchable onPress={() => onNavigate(SMART_SCAN_PAGE)} style={[styles.menuCard, {backgroundColor: '#eceef7'}]}>
+          <View style={[styles.menuIcon, {backgroundColor: '#7a85b3'}]}><MaterialIcon color="#fff" name="receipt_long" size={20} /></View>
+          <View style={{flex: 1}}>
+            <Text style={styles.menuTitle}>สแกนใบเสร็จ</Text>
+            <Text style={styles.menuSubtitle}>ให้ AI แยกหมวดรายจ่ายให้อัตโนมัติ</Text>
+          </View>
+          <MaterialIcon color={C.ink} name="chevron_right" size={21} />
+        </Touchable> : null}
 
         <View style={styles.sectionHead}><Text style={styles.sectionTitle}>{filter === 'income' ? 'รายการรายรับ' : filter === 'expense' ? 'รายการรายจ่าย' : 'รายการล่าสุด'}</Text>{filter === 'income' ? <Touchable onPress={() => onNavigate('smartlife_add_income')}><Text style={styles.allLink}>เพิ่มรายรับ</Text></Touchable> : filter === 'expense' ? <Touchable onPress={() => onNavigate('smartlife_add_expense')}><Text style={styles.allLink}>เพิ่มรายจ่าย</Text></Touchable> : null}</View>
         <View style={styles.transactionList}>{shown.length ? shown.map((item, index) => <TransactionRow item={item} key={str(item, 'id', String(index))} onDelete={() => setDeleting(item)} onRecategorize={() => setRecategorizing(item)} />) : <View style={styles.empty}><MaterialIcon color="#a1aaa0" name="receipt_long" size={32} /><Text style={styles.emptyText}>ยังไม่มีรายการในช่วงนี้</Text></View>}</View>
