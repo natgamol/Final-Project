@@ -487,14 +487,15 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
       <View style={styles.screen}>
         <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.accent} />} showsVerticalScrollIndicator={false}>
           <View style={styles.topBar}>
-            <Touchable onPress={goToday}><Text style={styles.todayLink}>วันนี้</Text></Touchable>
+            <View>
+              <Touchable accessibilityLabel="ไปยังวันนี้" accessibilityRole="button" onPress={goToday}><Text style={styles.todayLink}>วันนี้</Text></Touchable>
+              <Text style={styles.largeTitle}>ปฏิทิน</Text>
+            </View>
             <View style={styles.topActions}>
               <Touchable accessibilityLabel="นำเข้าตารางเรียน" onLayout={importScheduleOnLayout} onPress={() => onNavigate('smartlife_scan_schedule')} ref={importScheduleRef} style={styles.circleButton}><MaterialIcon color={C.accent} name="document_scanner" size={22} /></Touchable>
               <Touchable accessibilityLabel="เพิ่มรายการ" accessibilityRole="button" onPress={() => onNavigate('smartlife_add_activity')} style={styles.circleButton}><MaterialIcon color={C.accent} name="add" size={24} /></Touchable>
             </View>
           </View>
-          <Text style={styles.largeTitle}>ปฏิทิน</Text>
-
           {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{([['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as [PlannerTab, string][]).map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Touchable>)}</View> : null}
 
           <GoogleCalendarSyncCard onSynced={load} uid={uid} />
@@ -671,12 +672,12 @@ const styles = StyleSheet.create({
   screen: {backgroundColor: C.background, flex: 1},
   content: {alignSelf: 'center', gap: 12, maxWidth: 1200, paddingBottom: 28, paddingHorizontal: 16, paddingTop: 8, width: '100%'},
   topBar: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'},
-  todayLink: {color: C.accent, fontFamily: F.s, fontSize: 14},
+  todayLink: {color: C.accent, fontFamily: F.b, fontSize: 12},
   topActions: {flexDirection: 'row', gap: 8},
   circleButton: {alignItems: 'center', backgroundColor: C.card, borderRadius: 22, height: 44, justifyContent: 'center', width: 44},
-  largeTitle: {color: C.label, fontFamily: F.x, fontSize: 31, letterSpacing: -.5, lineHeight: 39},
-  plannerTabs: {backgroundColor: '#e3e3e8', borderRadius: 9, flexDirection: 'row', padding: 2},
-  plannerTab: {alignItems: 'center', borderRadius: 7, flex: 1, paddingVertical: 7},
+  largeTitle: {color: C.label, fontFamily: F.x, fontSize: 24},
+  plannerTabs: {backgroundColor: '#e3e3e8', borderRadius: 16, flexDirection: 'row', padding: 4},
+  plannerTab: {alignItems: 'center', borderRadius: 12, flex: 1, paddingVertical: 9},
   plannerTabActive: {backgroundColor: C.card, boxShadow: '0 1px 3px rgba(0,0,0,.16)'},
   plannerTabText: {color: C.secondary, fontFamily: F.m, fontSize: 12},
   plannerTabTextActive: {color: C.label, fontFamily: F.s},
