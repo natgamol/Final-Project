@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   inlineTextInput: {color: '#354133', flex: 1, fontFamily: 'Prompt_400Regular', fontSize: 12, minHeight: 42},
   modernCard: {backgroundColor: '#fff', borderRadius: 22, boxShadow: '0 8px 20px rgba(42,58,42,.07)', padding: 15},
   modernHeader: {alignItems: 'center', flexDirection: 'row', gap: 11},
-  modernHeaderCopy: {alignItems: 'center', flex: 1},
+  modernHeaderCopy: {flex: 1},
   modernPage: {paddingBottom: 8},
   modernTitle: {color: '#2f3d2f', fontFamily: 'Prompt_800ExtraBold', fontSize: 21, marginTop: 1},
   priorityQuickOption: {alignItems: 'center', backgroundColor: '#f0f4ed', borderColor: '#e1e7df', borderRadius: 13, borderWidth: 1, flex: 1, gap: 5, justifyContent: 'center', minHeight: 54, paddingHorizontal: 5},

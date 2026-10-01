@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import {forwardRef, useCallback, useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {ActivityIndicator, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {Touchable} from '@/components/touchable';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
 import {AnimatedNumber, Reveal} from '@/components/motion';
@@ -241,7 +241,7 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
   return <ResponsiveSafeArea style={styles.safe}><View style={styles.screen}><UserGradientBackdrop />
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.sage} />} showsVerticalScrollIndicator={false}>
       <View style={styles.topRow}>
-        <SoftPress onPress={() => onNavigate('smartlife_profile')} style={styles.profileRow}><View style={styles.avatar}><View style={styles.avatarGlow} /><Text style={styles.avatarText}>{string(profile, 'displayName', 'SL').slice(0, 2).toUpperCase()}</Text></View><View style={styles.greeting}><Text numberOfLines={1} style={styles.hello}>{bangkokGreeting(new Date(clockNow))}</Text><Text ellipsizeMode="tail" numberOfLines={1} style={styles.name}>{string(profile, 'displayName', 'เพื่อน')}</Text></View></SoftPress>
+        <SoftPress onPress={() => onNavigate('smartlife_profile')} style={styles.profileRow}><View style={styles.avatar}><View style={styles.avatarGlow} />{string(profile, 'avatarUrl', '') ? <Image source={{uri: string(profile, 'avatarUrl', '')}} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{string(profile, 'displayName', 'SL').slice(0, 2).toUpperCase()}</Text>}</View><View style={styles.greeting}><Text numberOfLines={1} style={styles.hello}>{bangkokGreeting(new Date(clockNow))}</Text><Text ellipsizeMode="tail" numberOfLines={1} style={styles.name}>{string(profile, 'displayName', 'เพื่อน')}</Text></View></SoftPress>
         <View style={styles.topRowActions}>
           {/* A full card (even a softened one) at the top of the screen still
               reads as "the most important thing here" by position alone. A
@@ -346,6 +346,11 @@ const styles = StyleSheet.create({
   aiTitle: {color: '#fff', fontFamily: font.bold, fontSize: 17},
   aiTop: {alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between'},
   avatar: {...shadow, alignItems: 'center', backgroundColor: '#834b51', borderColor: '#fff', borderRadius: 25, borderWidth: 2, flexShrink: 0, height: 50, justifyContent: 'center', overflow: 'hidden', width: 50},
+  // The photo was already arriving in `data.profile` -- `user/index` loads the
+  // whole users document -- but this header only ever drew initials, so a user
+  // who had set a picture still saw letters here while the profile page showed
+  // the photo. The circle already clips, so the image just fills it.
+  avatarImage: {height: '100%', width: '100%'},
   avatarGlow: {backgroundColor: '#d8b3a5', borderRadius: 22, height: 32, opacity: .34, position: 'absolute', right: -8, top: -6, width: 32},
   avatarText: {color: '#fff', fontFamily: font.bold, fontSize: 15},
   // The bell keeps its own square and is never allowed to shrink or be
