@@ -293,32 +293,10 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
 </Reveal>
 
 <Reveal index={8}>
-        {/* Only the filtered views still carry these. On the overview the quick
-            add row above does the same job higher up the page, so keeping them
-            here would be the same action offered twice. */}
-        {filter === 'income' ? <Touchable onPress={() => onNavigate('smartlife_add_income')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
-          <View style={[styles.menuIcon, {backgroundColor: C.sage}]}><MaterialIcon color="#fff" name="add_card" size={20} /></View>
-          <View style={{flex: 1}}>
-            <Text style={styles.menuTitle}>เพิ่มรายรับ</Text>
-            <Text style={styles.menuSubtitle}>กรอกจำนวน หมวดหมู่ วันที่ และโน้ตด้วยตัวเอง</Text>
-          </View>
-          <MaterialIcon color={C.ink} name="chevron_right" size={21} />
-        </Touchable> : null}
-        {filter === 'expense' ? <Touchable onPress={() => onNavigate('smartlife_add_expense')} style={[styles.menuCard, {backgroundColor: '#fcedea'}]}>
-          <View style={[styles.menuIcon, {backgroundColor: '#c96e68'}]}><MaterialIcon color="#fff" name="add_card" size={20} /></View>
-          <View style={{flex: 1}}>
-            <Text style={styles.menuTitle}>เพิ่มรายจ่ายเอง</Text>
-            <Text style={styles.menuSubtitle}>เลือกหมวดหลัก หรือตั้งชื่อหมวดรายจ่ายของคุณเอง</Text>
-          </View>
-          <MaterialIcon color={C.ink} name="chevron_right" size={21} />
-        </Touchable> : null}
-</Reveal>
-
-<Reveal index={9}>
         {period !== 'day' ? <SpendingCharts period={period} referenceDate={referenceDate} transactions={all} /> : null}
 </Reveal>
 
-<Reveal index={10}>
+<Reveal index={9}>
         <Touchable onPress={() => onNavigate('smartlife_monthly_budget')} style={[styles.menuCard, {backgroundColor: '#faecea', marginTop: 16}]}>
             <View style={[styles.menuIcon, {backgroundColor: '#d89182'}]}><MaterialIcon color="#fff" name="savings" size={20} /></View>
             <View style={{flex: 1}}>
@@ -329,7 +307,7 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
         </Touchable>
 </Reveal>
 
-<Reveal index={11}>
+<Reveal index={10}>
         <Touchable onPress={() => onNavigate('smartlife_line_bank')} style={[styles.menuCard, {backgroundColor: '#eef3ea'}]}>
             <View style={[styles.menuIcon, {backgroundColor: '#72956f'}]}><MaterialIcon color="#fff" name="notifications_active" size={20} /></View>
             <View style={{flex: 1}}>

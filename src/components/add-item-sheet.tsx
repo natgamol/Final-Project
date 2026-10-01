@@ -25,7 +25,6 @@ type AddItemOption = {
 export const ADD_ITEM_OPTIONS: AddItemOption[] = [
   {bg: '#e8ecf7', icon: 'document_scanner', iconColor: '#6572ad', page: 'smartlife_scan_schedule', subtitle: 'สแกนตารางเรียน ใบเสร็จ หรือเอกสารให้ AI อ่าน', title: 'Smart Scan'},
   {bg: '#e5efe2', icon: 'event', iconColor: '#52734b', page: 'smartlife_add_activity', subtitle: 'เพิ่มคลาส นัดหมาย หรือกิจกรรมที่มีเวลา', title: 'กิจกรรม/ตารางใหม่'},
-  {bg: '#e3f0ef', icon: 'location_on', iconColor: '#3f8a82', page: 'smartlife_add_appointment', subtitle: 'นัดพบ นัดหมอ หรือธุระที่มีสถานที่และเวลา', title: 'นัดหมาย'},
   {bg: '#f3e8e8', icon: 'check_box', iconColor: '#bb7777', page: 'smartlife_add_task', subtitle: 'งานส่ง การบ้าน Quiz หรือสิ่งที่ AI Dynamic ต้องจัดลำดับ', title: 'เพิ่มงาน'},
   {bg: '#eceef7', icon: 'account_balance_wallet', iconColor: '#6572ad', page: 'smartlife_add_income', subtitle: 'บันทึกเงินเข้าเอง เช่น เงินเดือน เงินโอน หรือรายได้เสริม', title: 'เพิ่มรายรับ'},
   // Manual expense entry used to be the one "add" this sheet did not offer, so

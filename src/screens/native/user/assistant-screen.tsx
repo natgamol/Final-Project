@@ -764,19 +764,8 @@ const shortcuts = [
   ['auto_awesome', 'Adaptive AI', 'จัดงานลงเวลาว่าง', ADAPTIVE_AI_SHORTCUT],
 ];
 
-type QuickAddCategoryId = 'adaptive' | 'finance' | 'note' | 'ocr' | 'task' | 'time' | 'wellbeing';
+type QuickAddCategoryId = 'adaptive' | 'finance' | 'note' | 'task' | 'time' | 'wellbeing';
 type QuickAddSuggestion = {action?: 'activate_adaptive'; detail: string; icon: string; prompt: string; title: string};
-
-const defaultOcrShortcuts: QuickAddSuggestion[] = [
-  {detail: 'ดูข้อมูลจากสลิปหรือใบเสร็จล่าสุด', icon: 'receipt_long', prompt: 'สรุปข้อมูลจาก OCR ล่าสุดให้หน่อย', title: 'ดู OCR ล่าสุด'},
-  {detail: 'แยกปี พ.ศ. และ ค.ศ. ให้ถูกต้อง', icon: 'event_available', prompt: 'ตรวจวันและปีจาก OCR ว่าเป็น พ.ศ. หรือ ค.ศ.', title: 'ตรวจวันและปี'},
-  {detail: 'ค้นจากข้อมูล OCR ช่วงล่าสุด ไม่จำกัดวันเดียว', icon: 'history', prompt: 'แสดงข้อมูล OCR ที่บันทึกไว้ช่วงล่าสุด', title: 'ดู OCR ช่วงล่าสุด'},
-  {detail: 'ชี้ข้อมูลที่ไม่แน่ใจเพื่อให้ตรวจแก้', icon: 'fact_check', prompt: 'ตรวจข้อมูล OCR ที่ยังไม่แน่ใจและบอกจุดที่ควรแก้', title: 'ตรวจจุดไม่แน่ใจ'},
-];
-
-function ocrShortcutsKey(uid: string) {
-  return `smartlife:assistant:ocr-shortcuts:${uid}`;
-}
 
 function isAdaptiveSchedulingCommand(value: string) {
   return /(หาเวลา(?:ให้|ทำ|อ่าน)|(?:ย้าย|เลื่อน|จัด|วาง|แบ่ง|แทรก).*(?:งาน|การบ้าน|อ่าน|เรียน|ออกกำลัง)|(?:จัด|วาง|เลื่อน|ย้าย|นัด).{0,100}(?:ช่วง(?:เช้า|สาย|บ่าย|เย็น|กลางคืน)|วัน(?:นี้|พรุ่งนี้|มะรืน|จันทร์|อังคาร|พุธ|พฤหัส(?:บดี)?|ศุกร์|เสาร์|อาทิตย์)|เวลา\s*\d{1,2}(?::\d{2})?|\d{1,2}\s*(?:โมง|ทุ่ม))|(?:งานค้าง|งานที่ยังไม่เสร็จ).*(?:ลง|ใส่|ย้าย|จัด).*(?:เวลาว่าง|ตาราง)|ตาราง.*(?:เบา|แน่น|ล้น)|(?:ช่วย)?จัด.*สัปดาห์|สัปดาห์.*(?:จัด|วาง|ปรับ)|สมดุล.*สัปดาห์|plan my|find time|move my unfinished|make tomorrow less busy|when am i most productive|productive|ประสิทธิภาพ|ช่วงไหน.*(?:ทำงาน|อ่าน|เรียน).*ดี|อย่า.*(?:จัด|วาง)|ไม่.*(?:จัด|วาง).*(?:เช้า|บ่าย|เย็น|ดึก)|do not schedule|always schedule|จัด.*(?:อ่าน|เรียน|ออกกำลัง|เขียนโปรแกรม).*(?:เช้า|บ่าย|เย็น|ดึก)|why.*move|ทำไม.*ย้าย)/i.test(value);
@@ -808,24 +797,6 @@ function adaptiveProposalAction(proposal: AdaptiveProposedActivity): AssistantPr
       : `เพิ่มงานยืดหยุ่น "${proposal.title}" ลงช่วงว่างที่ AI ตรวจแล้ว`,
     type: 'create',
   };
-}
-
-function parseOcrShortcuts(raw: string | null): QuickAddSuggestion[] {
-  if (!raw) return defaultOcrShortcuts;
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return defaultOcrShortcuts;
-    const shortcuts = parsed.slice(0, 4).flatMap((item): QuickAddSuggestion[] => {
-      if (!item || typeof item !== 'object') return [];
-      const title = String(item.title ?? '').trim().slice(0, 40);
-      const prompt = String(item.prompt ?? '').trim().slice(0, 240);
-      if (!title || !prompt) return [];
-      return [{detail: String(item.detail ?? prompt).trim().slice(0, 90), icon: 'document_scanner', prompt, title}];
-    });
-    return shortcuts.length ? shortcuts : defaultOcrShortcuts;
-  } catch {
-    return defaultOcrShortcuts;
-  }
 }
 
 const quickAddCategories: {
@@ -920,15 +891,6 @@ const quickAddCategories: {
       {detail: 'สรุปช่วงที่ทำสำเร็จจริงจากประวัติของฉัน', icon: 'psychology', prompt: 'จากพฤติกรรมจริง ช่วงไหนฉันทำกิจกรรมสำเร็จได้ดีที่สุด', title: 'ดูสิ่งที่ AI เรียนรู้'},
     ],
     title: 'Adaptive',
-  },
-  {
-    createLabel: 'ตั้งค่าคำถามลัด OCR',
-    createPrompt: '',
-    detail: 'สลิป ใบเสร็จ วันเวลา และข้อมูลสแกนล่าสุด',
-    icon: 'document_scanner',
-    id: 'ocr',
-    suggestions: defaultOcrShortcuts,
-    title: 'OCR',
   },
 ];
 
@@ -1032,9 +994,6 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
   const [input, setInput] = useState('');
   const [listening, setListening] = useState(false);
   const [newChatMenuOpen, setNewChatMenuOpen] = useState(false);
-  const [ocrShortcutDrafts, setOcrShortcutDrafts] = useState<QuickAddSuggestion[]>(defaultOcrShortcuts);
-  const [ocrShortcutEditorOpen, setOcrShortcutEditorOpen] = useState(false);
-  const [ocrShortcuts, setOcrShortcuts] = useState<QuickAddSuggestion[]>(defaultOcrShortcuts);
   const [quickAddCategory, setQuickAddCategory] = useState<QuickAddCategoryId | null>(null);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -1046,20 +1005,11 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
   // Refactored UI: the clean state remains visible until the user starts a conversation.
   const hasConversation = messages.some((message) => message.role === 'user');
   const visibleMessages = hasConversation ? messages.filter((message) => message.id !== 'assistant-intro') : [];
-  const baseSelectedQuickAddCategory = quickAddCategories.find((category) => category.id === quickAddCategory) ?? null;
-  const selectedQuickAddCategory = baseSelectedQuickAddCategory?.id === 'ocr'
-    ? {...baseSelectedQuickAddCategory, suggestions: ocrShortcuts}
-    : baseSelectedQuickAddCategory;
+  const selectedQuickAddCategory = quickAddCategories.find((category) => category.id === quickAddCategory) ?? null;
 
   useEffect(() => {
     temporaryChatRef.current = temporaryChat;
   }, [temporaryChat]);
-
-  useEffect(() => {
-    AsyncStorage.getItem(ocrShortcutsKey(uid))
-      .then((value) => setOcrShortcuts(parseOcrShortcuts(value)))
-      .catch(() => setOcrShortcuts(defaultOcrShortcuts));
-  }, [uid]);
 
   useEffect(() => {
     let active = true;
@@ -1643,27 +1593,6 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
     setQuickAddCategory(null);
   };
 
-  const openOcrShortcutEditor = () => {
-    setOcrShortcutDrafts(ocrShortcuts.map((shortcut) => ({...shortcut})));
-    setOcrShortcutEditorOpen(true);
-  };
-
-  const saveOcrShortcutEditor = async () => {
-    const validShortcuts = ocrShortcutDrafts.slice(0, 4).flatMap((item): QuickAddSuggestion[] => {
-      const title = item.title.trim().slice(0, 40);
-      const prompt = item.prompt.trim().slice(0, 240);
-      if (!title || !prompt) return [];
-      return [{detail: prompt.slice(0, 90), icon: 'document_scanner', prompt, title}];
-    });
-    if (!validShortcuts.length) {
-      showToast('ยังบันทึกไม่ได้', 'กรุณาใส่ชื่อและคำถามอย่างน้อย 1 รายการ');
-      return;
-    }
-    setOcrShortcuts(validShortcuts);
-    setOcrShortcutEditorOpen(false);
-    await AsyncStorage.setItem(ocrShortcutsKey(uid), JSON.stringify(validShortcuts));
-  };
-
   const stopVoiceInput = async () => {
     if (Platform.OS === 'web') {
       if (browserMediaRecorderRef.current?.state === 'recording') {
@@ -2176,7 +2105,6 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
                     <Text style={local.quickAddTitle}>คำถามลัด: {selectedQuickAddCategory.title}</Text>
                     <Text style={local.quickAddHint}>แตะคำถามเพื่อถาม AI ได้ทันที</Text>
                   </View>
-                  {selectedQuickAddCategory.id === 'ocr' ? <Touchable accessibilityLabel="ตั้งค่าคำถามลัด OCR" onPress={openOcrShortcutEditor} style={local.quickAddBack}><MaterialIcon color="#5d8059" name="settings" size={18} /></Touchable> : null}
                 </View>
               ) : (
                 <>
@@ -2198,8 +2126,8 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
                       <MaterialIcon color="#9aa595" name="arrow_forward_ios" size={14} />
                     </Touchable>
                   ))}
-                  {selectedQuickAddCategory.id !== 'adaptive' ? <Touchable disabled={busy} onPress={() => selectedQuickAddCategory.id === 'ocr' ? openOcrShortcutEditor() : chooseQuickAdd(selectedQuickAddCategory.createPrompt)} style={({pressed}) => [local.quickAddCreate, pressed && local.pressed, busy && local.disabled]}>
-                    <MaterialIcon color="#ffffff" name={selectedQuickAddCategory.id === 'ocr' ? 'settings' : 'add'} size={19} />
+                  {selectedQuickAddCategory.id !== 'adaptive' ? <Touchable disabled={busy} onPress={() => chooseQuickAdd(selectedQuickAddCategory.createPrompt)} style={({pressed}) => [local.quickAddCreate, pressed && local.pressed, busy && local.disabled]}>
+                    <MaterialIcon color="#ffffff" name="add" size={19} />
                     <Text style={local.quickAddCreateText}>{selectedQuickAddCategory.createLabel}</Text>
                   </Touchable> : null}
                 </>
@@ -2302,28 +2230,6 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
         </Pressable>
       </Modal>
 
-      <Modal animationType="slide" onRequestClose={() => setOcrShortcutEditorOpen(false)} transparent visible={ocrShortcutEditorOpen}>
-        <Pressable onPress={() => setOcrShortcutEditorOpen(false)} style={local.modalOverlay}>
-          <Pressable onPress={(event) => event.stopPropagation()} style={[local.modalSheet, local.historySheet]}>
-            <View style={local.modalHandle} />
-            <View style={local.modalHeaderRow}>
-              <View style={{flex: 1}}><Text style={local.modalTitle}>ตั้งค่าคำถามลัด OCR</Text><Text style={local.modalHint}>สร้างได้สูงสุด 4 รายการในหมวด OCR</Text></View>
-              <Touchable onPress={() => setOcrShortcutEditorOpen(false)} style={local.modalClose}><MaterialIcon color="#5d6658" name="close" size={20} /></Touchable>
-            </View>
-            <ScrollView contentContainerStyle={local.shortcutEditorList} keyboardShouldPersistTaps="handled">
-              {ocrShortcutDrafts.map((shortcut, index) => (
-                <View key={`ocr-draft-${index}`} style={local.shortcutEditorCard}>
-                  <View style={local.shortcutEditorHeader}><Text style={local.shortcutEditorNumber}>คำถามลัด {index + 1}</Text><Touchable onPress={() => setOcrShortcutDrafts((current) => current.filter((_, itemIndex) => itemIndex !== index))}><MaterialIcon color="#9a6b6b" name="delete_outline" size={19} /></Touchable></View>
-                  <TextInput maxLength={40} onChangeText={(title) => setOcrShortcutDrafts((current) => current.map((item, itemIndex) => itemIndex === index ? {...item, title} : item))} placeholder="ชื่อปุ่ม เช่น ตรวจวันและปี" placeholderTextColor="#929b8f" style={local.shortcutEditorInput} value={shortcut.title} />
-                  <TextInput maxLength={240} multiline onChangeText={(prompt) => setOcrShortcutDrafts((current) => current.map((item, itemIndex) => itemIndex === index ? {...item, prompt} : item))} placeholder="คำถามที่จะส่งให้ AI" placeholderTextColor="#929b8f" style={[local.shortcutEditorInput, local.shortcutEditorPrompt]} value={shortcut.prompt} />
-                </View>
-              ))}
-              {ocrShortcutDrafts.length < 4 ? <Touchable onPress={() => setOcrShortcutDrafts((current) => [...current, {detail: '', icon: 'document_scanner', prompt: '', title: ''}])} style={local.addShortcutButton}><MaterialIcon color="#5d8059" name="add" size={19} /><Text style={local.addShortcutText}>เพิ่มคำถามลัด</Text></Touchable> : null}
-            </ScrollView>
-            <Touchable onPress={saveOcrShortcutEditor} style={local.saveShortcutButton}><MaterialIcon color="#fff" name="check" size={19} /><Text style={local.quickAddCreateText}>บันทึกคำถามลัด</Text></Touchable>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </UserShell>
   );
 }
