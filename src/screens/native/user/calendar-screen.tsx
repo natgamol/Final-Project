@@ -16,7 +16,6 @@ import {activities, deleteCourseSeries, schedules} from '@/services/firestore';
 import {recordTaskCompleted, recordTaskPostponed} from '@/services/behavior-tracking';
 import {MaterialIcon, UserTabBar} from './user-ui';
 import {showToast} from '@/components/app-toast';
-import {AddItemSheet} from '@/components/add-item-sheet';
 import {useTourTarget} from '@/hooks/use-tour-target';
 import {useTour} from '@/providers/tour-provider';
 
@@ -146,7 +145,6 @@ function miniMonthDays(year: number, month: number) {
 export default function CalendarScreen({onNavigate, page, planner, uid}: Props) {
   const {maybeStartTour} = useTour();
   const {ref: importScheduleRef, onLayout: importScheduleOnLayout} = useTourTarget('calendar', 'import-schedule');
-  const [addSheetOpen, setAddSheetOpen] = useState(false);
   useEffect(() => {
     maybeStartTour('calendar');
   }, [maybeStartTour]);
@@ -492,7 +490,7 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
             <Touchable onPress={goToday}><Text style={styles.todayLink}>วันนี้</Text></Touchable>
             <View style={styles.topActions}>
               <Touchable accessibilityLabel="นำเข้าตารางเรียน" onLayout={importScheduleOnLayout} onPress={() => onNavigate('smartlife_scan_schedule')} ref={importScheduleRef} style={styles.circleButton}><MaterialIcon color={C.accent} name="document_scanner" size={22} /></Touchable>
-              <Touchable accessibilityLabel="เพิ่มรายการ" accessibilityRole="button" onPress={() => setAddSheetOpen(true)} style={styles.circleButton}><MaterialIcon color={C.accent} name="add" size={24} /></Touchable>
+              <Touchable accessibilityLabel="เพิ่มรายการ" accessibilityRole="button" onPress={() => onNavigate('smartlife_add_activity')} style={styles.circleButton}><MaterialIcon color={C.accent} name="add" size={24} /></Touchable>
             </View>
           </View>
           <Text style={styles.largeTitle}>ปฏิทิน</Text>
@@ -522,8 +520,6 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
           {mode !== 'day' ? <View style={styles.agendaSection}><View style={styles.sectionHeader}><View><Text style={styles.sectionTitle}>{selectedDate === today ? 'วันนี้' : formatLongDate(selectedDate)}</Text><Text style={styles.sectionSub}>{selectedEvents.length ? `${selectedEvents.length} รายการ` : 'ไม่มีกิจกรรม'}</Text></View><Touchable onPress={() => setDetailsOpen(true)}><Text style={styles.seeAll}>ดูทั้งหมด</Text></Touchable></View><AgendaList completingId={completingId} events={selectedEvents} onComplete={(event) => void completeEvent(event)} onDelete={deleteEvent} onOpen={() => setDetailsOpen(true)} onPostpone={setPostponing} /></View> : null}
         </ScrollView>
 
-
-        <AddItemSheet onClose={() => setAddSheetOpen(false)} onNavigate={onNavigate} visible={addSheetOpen} />
 
         <UserTabBar active={planner ? 'smartlife_planner' : 'smartlife_calendar_day'} onNavigate={onNavigate} />
 
