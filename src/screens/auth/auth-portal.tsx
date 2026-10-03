@@ -79,7 +79,12 @@ export default function AuthPortal({mode, onFacebook, onGoogle, onSubmit, onSwit
 
       <LinearGradient colors={['rgba(255,255,255,.96)', 'rgba(248,250,245,.92)']} end={{x: 1, y: 1}} start={{x: 0, y: 0}} style={styles.formCard}>
         {registering ? <Field icon="badge" label="ชื่อ - นามสกุล" onChangeText={setDisplayName} placeholder="สมชาย ใจดี" value={displayName} /> : null}
-        <Field icon={registering ? 'mail' : 'person'} keyboardType="email-address" label={registering ? 'รหัสนักศึกษา หรือ อีเมล' : 'ชื่อผู้ใช้ หรือ อีเมล'} onChangeText={setEmail} placeholder={registering ? 'B67xxxxx / email@sut.ac.th' : 'สมชาย หรือ name@example.com'} value={email} />
+        {/* An email in both modes, because that is all either one accepts: the
+            value goes straight to Firebase email/password auth. Sign-up used
+            to offer "รหัสนักศึกษา" and log-in "ชื่อผู้ใช้" -- neither was ever
+            looked up, so typing either one simply failed. A student ID is
+            optional and set on the profile page instead. */}
+        <Field icon="mail" keyboardType="email-address" label="อีเมล" onChangeText={setEmail} placeholder="name@example.com" value={email} />
         <Field icon="lock" label="รหัสผ่าน" onChangeText={setPassword} onToggle={() => setShowPassword((value) => !value)} placeholder="••••••••" secure={!showPassword} value={password} />
         {registering ? <Field icon="verified" label="ยืนยันรหัสผ่าน" onChangeText={setConfirmPassword} placeholder="••••••••" secure={!showPassword} value={confirmPassword} /> : <Touchable disabled={busy} onPress={resetPassword} style={styles.forgot}><Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text></Touchable>}
 

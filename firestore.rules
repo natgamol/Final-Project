@@ -67,7 +67,7 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'uid', 'email', 'displayName', 'avatarUrl', 'role',
           'consentHistory', 'consentTier', 'lineConsentUpdatedAt',
-          'lineConsentVersion', 'lineListenerStatus',
+          'lineConsentVersion', 'lineListenerStatus', 'studentId',
           'createdAt', 'updatedAt'
         ])
         && data.uid == userId
@@ -87,6 +87,7 @@ service cloud.firestore {
         && (!('lineConsentUpdatedAt' in data) || data.lineConsentUpdatedAt is timestamp)
         && (!('lineConsentVersion' in data) || (data.lineConsentVersion is int && data.lineConsentVersion == 1))
         && (!('lineListenerStatus' in data) || data.lineListenerStatus in ['active', 'not_applicable', 'permission_revoked'])
+        && (!('studentId' in data) || (data.studentId is string && data.studentId.size() <= 32))
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
     }
@@ -488,7 +489,7 @@ service cloud.firestore {
         && request.resource.data.role == resource.data.role
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'avatarUrl', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'avatarUrl', 'studentId', 'updatedAt']);
       allow delete: if false;
 
       match /monthlyBudgets/{monthKey} {

@@ -252,7 +252,7 @@ export async function signOutCurrentUser() {
  * before the write so a rejection surfaces as a readable message rather than a
  * bare permission error.
  */
-export async function updateProfileDetails({avatarUrl, displayName}: {avatarUrl?: string; displayName?: string}) {
+export async function updateProfileDetails({avatarUrl, displayName, studentId}: {avatarUrl?: string; displayName?: string; studentId?: string}) {
   if (isDemoMode) return;
   requireFirebaseConfig();
   const user = auth.currentUser;
@@ -266,14 +266,23 @@ export async function updateProfileDetails({avatarUrl, displayName}: {avatarUrl?
   if (avatarUrl !== undefined && avatarUrl !== '' && !avatarUrl.startsWith('https://')) {
     throw new Error('ลิงก์รูปโปรไฟล์ไม่ถูกต้อง');
   }
+  // Optional: an empty string is how it is cleared, so only the length is
+  // checked. It is not a login identifier and nothing requires it.
+  const student = studentId?.trim();
+  if (student !== undefined && student.length > 32) throw new Error('รหัสนักศึกษาต้องยาวไม่เกิน 32 ตัวอักษร');
 
-  await updateProfile(user, {
-    ...(name === undefined ? {} : {displayName: name}),
-    ...(avatarUrl === undefined ? {} : {photoURL: avatarUrl}),
-  });
+  // Firebase Auth has no field for a student ID -- it lives only on the users
+  // document -- so a change to it alone skips the Auth round trip.
+  if (name !== undefined || avatarUrl !== undefined) {
+    await updateProfile(user, {
+      ...(name === undefined ? {} : {displayName: name}),
+      ...(avatarUrl === undefined ? {} : {photoURL: avatarUrl}),
+    });
+  }
   await updateDoc(doc(db, 'users', user.uid), {
     ...(name === undefined ? {} : {displayName: name}),
     ...(avatarUrl === undefined ? {} : {avatarUrl}),
+    ...(student === undefined ? {} : {studentId: student}),
     updatedAt: serverTimestamp(),
   });
 }

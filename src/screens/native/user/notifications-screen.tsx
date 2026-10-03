@@ -259,25 +259,43 @@ export default function NotificationsScreen({page, uid, onNavigate}: {page: Page
       notifications.list(uid).catch(() => []),
       page === 'smartlife_notifications_ai' || page === 'smartlife_notifications' ? aiRecommendations.list(uid).catch(() => []) : Promise.resolve([]),
     ]);
-    setModel({
-      ai,
-      feed: buildNotificationFeed({
-        activities: pageData.activities,
-        dailyBudget: savedBudget?.dailyAmount,
-        monthlyBudget: savedBudget?.amount ?? 0,
-        weeklyBudget: savedBudget?.weeklyAmount,
-        monthTransactions: itemsOf(monthData?.transactions).map((item) => ({
-          amount: Number(item.amount ?? 0),
-          occurredAt: item.occurredAt as never,
-          type: item.type === 'income' ? 'income' : 'expense',
-        })),
-        notes: pageData.notes,
-        stored,
-        todayExpenses: itemsOf(pageData.transactions)
-          .filter((item) => item.type === 'expense')
-          .map((item) => ({amount: Number(item.amount ?? 0)})),
-      }),
+    const feed = buildNotificationFeed({
+      activities: pageData.activities,
+      dailyBudget: savedBudget?.dailyAmount,
+      monthlyBudget: savedBudget?.amount ?? 0,
+      weeklyBudget: savedBudget?.weeklyAmount,
+      monthTransactions: itemsOf(monthData?.transactions).map((item) => ({
+        amount: Number(item.amount ?? 0),
+        occurredAt: item.occurredAt as never,
+        type: item.type === 'income' ? 'income' : 'expense',
+      })),
+      notes: pageData.notes,
+      stored,
+      todayExpenses: itemsOf(pageData.transactions)
+        .filter((item) => item.type === 'expense')
+        .map((item) => ({amount: Number(item.amount ?? 0)})),
     });
+    setModel({ai, feed});
+
+    // Opening the list is reading it. Stored notices only ever turned read when
+    // one was tapped, and tapping one navigates away, so a user who opened the
+    // list and looked never cleared anything and the bell's number never fell.
+    //
+    // Scoped to this page's own feed rather than the eight rows it draws: the
+    // cap is a display limit, and a stored notice sorted past it would
+    // otherwise stay unread with no way to reach it, keeping the badge up for
+    // good. Derived alerts are left alone -- they count while their condition
+    // holds, which is the point of them.
+    //
+    // The rows on screen keep their "ใหม่" chip for this visit. Flipping them
+    // now would erase the only cue to which ones are new at the moment the
+    // reader arrives; the badge does not live on this screen, and the
+    // dashboard reads the flags fresh when it is next shown.
+    const unseen = feedForPage(page, feed).filter((item) => item.source === 'stored' && item.unread);
+    if (unseen.length) {
+      Promise.all(unseen.map((item) => notifications.markRead(uid, item.id.replace('stored:', ''))))
+        .catch((error) => console.error('[Notifications] Marking the list read failed', error));
+    }
   }, [page, uid]);
 
   useEffect(() => {

@@ -35,6 +35,25 @@ export default function ProfileScreen({uid, onNavigate, onLogout}: {uid: string;
   const [nameOpen, setNameOpen] = useState(false); const [nameDraft, setNameDraft] = useState(''); const [savingName, setSavingName] = useState(false); const [nameError, setNameError] = useState(''); const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const openNameEditor = () => { setNameDraft(profile?.displayName ?? ''); setNameError(''); setNameOpen(true); };
+  // The student ID used to be implied at sign-up -- the email field was
+  // labelled "รหัสนักศึกษา หรือ อีเมล" -- yet never stored anywhere, so this card
+  // could only ever show "-". It is set here instead, and stays optional.
+  const [studentIdOpen, setStudentIdOpen] = useState(false); const [studentIdDraft, setStudentIdDraft] = useState(''); const [savingStudentId, setSavingStudentId] = useState(false); const [studentIdError, setStudentIdError] = useState('');
+  const openStudentIdEditor = () => { setStudentIdDraft(profile?.studentId ?? ''); setStudentIdError(''); setStudentIdOpen(true); };
+  const saveStudentId = async () => {
+    if (savingStudentId) return;
+    setSavingStudentId(true); setStudentIdError('');
+    try {
+      await updateProfileDetails({studentId: studentIdDraft});
+      await load();
+      setStudentIdOpen(false);
+      showToast(studentIdDraft.trim() ? 'บันทึกรหัสนักศึกษาแล้ว' : 'ลบรหัสนักศึกษาแล้ว', undefined, 'success');
+    } catch (error) {
+      setStudentIdError(error instanceof Error ? error.message : 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+    } finally {
+      setSavingStudentId(false);
+    }
+  };
   const saveName = async () => {
     if (savingName) return;
     setSavingName(true); setNameError('');
@@ -128,7 +147,10 @@ export default function ProfileScreen({uid, onNavigate, onLogout}: {uid: string;
             <MaterialIcon color="rgba(255,255,255,.8)" name="edit" size={15} />
           </Touchable>
           <Text style={styles.email}>{profile.email || 'ยังไม่มีอีเมล'}</Text>
-          <Text style={styles.student}>รหัสนักศึกษา {profile.studentId || '-'}</Text>
+          <Touchable accessibilityLabel="แก้ไขรหัสนักศึกษา" accessibilityRole="button" onPress={openStudentIdEditor} style={styles.nameRow}>
+            <Text style={styles.student}>รหัสนักศึกษา {profile.studentId || '-'}</Text>
+            <MaterialIcon color="rgba(255,255,255,.72)" name="edit" size={13} />
+          </Touchable>
         </View>
         <MaterialIcon color="rgba(255,255,255,.75)" name="verified" size={22} />
       </AuroraGradient>
@@ -145,6 +167,22 @@ export default function ProfileScreen({uid, onNavigate, onLogout}: {uid: string;
       </Card>
       <Touchable onPress={logout} style={({pressed}) => [styles.logout, pressed && styles.pressed]}><MaterialIcon color={C.danger} name="logout" size={19} /><Text style={styles.logoutText}>ออกจากระบบ</Text></Touchable>
     </>}
+    <Modal animationType="fade" onRequestClose={() => { if (!savingStudentId) setStudentIdOpen(false); }} transparent visible={studentIdOpen}>
+      <View style={styles.modalBackdrop}>
+        <Pressable disabled={savingStudentId} onPress={() => setStudentIdOpen(false)} style={StyleSheet.absoluteFill} />
+        <View accessibilityViewIsModal style={styles.logoutDialog}>
+          <View style={styles.nameDialogIcon}><MaterialIcon color={C.dark} name="school" size={25} /></View>
+          <Text style={styles.logoutDialogTitle}>รหัสนักศึกษา</Text>
+          <Text style={styles.logoutDialogMessage}>ไม่บังคับ เว้นว่างไว้ได้ ลบทั้งหมดแล้วบันทึกเพื่อเอาออก</Text>
+          <View style={styles.textAreaShell}><TextInput autoCapitalize="characters" autoFocus maxLength={32} onChangeText={(value) => { setStudentIdDraft(value); setStudentIdError(''); }} onSubmitEditing={() => void saveStudentId()} placeholder="เช่น B6700000" placeholderTextColor="#9ca49a" returnKeyType="done" style={styles.nameInput} value={studentIdDraft} /></View>
+          {studentIdError ? <View style={styles.logoutError}><MaterialIcon color={C.danger} name="error" size={17} /><Text style={styles.logoutErrorText}>{studentIdError}</Text></View> : null}
+          <View style={styles.logoutActions}>
+            <Touchable disabled={savingStudentId} onPress={() => setStudentIdOpen(false)} style={({pressed}) => [styles.cancelLogout, pressed && styles.pressed, savingStudentId && styles.disabled]}><Text style={styles.cancelLogoutText}>ยกเลิก</Text></Touchable>
+            <Touchable disabled={savingStudentId} onPress={() => void saveStudentId()} style={({pressed}) => [styles.confirmName, pressed && styles.pressed, savingStudentId && styles.disabled]}>{savingStudentId ? <><ActivityIndicator color="#fff" size="small" /><Text style={styles.confirmLogoutText}>กำลังบันทึก...</Text></> : <><MaterialIcon color="#fff" name="check" size={17} /><Text style={styles.confirmLogoutText}>บันทึก</Text></>}</Touchable>
+          </View>
+        </View>
+      </View>
+    </Modal>
     <Modal animationType="fade" onRequestClose={() => { if (!savingName) setNameOpen(false); }} transparent visible={nameOpen}>
       <View style={styles.modalBackdrop}>
         <Pressable disabled={savingName} onPress={() => setNameOpen(false)} style={StyleSheet.absoluteFill} />

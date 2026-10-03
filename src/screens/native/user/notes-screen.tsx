@@ -9,7 +9,7 @@ import AiActivityRecommendationCard from '@/components/ai-activity-recommendatio
 import {loadLegacyPageData} from '@/services/legacy-data';
 import {noteFolders as folderStore, notes as notesStore} from '@/services/firestore';
 import type {NoteFolder, WithId} from '@/types/smartlife';
-import {MaterialIcon, UserGradientBackdrop, UserTabBar} from './user-ui';
+import {MaterialIcon, PLANNER_TABS, UserGradientBackdrop, UserTabBar} from './user-ui';
 import {showToast} from '@/components/app-toast';
 
 type Page = 'smartlife_notes' | 'smartlife_notes_study' | 'smartlife_notes_work' | 'smartlife_notes_ideas';
@@ -58,22 +58,35 @@ export default function NotesScreen({onNavigate, page, planner, uid}: Props) {
    * not do this anyway. At the 100-note page size a student actually has, the
    * filter is instant; past that it would need a search service.
    */
-  const notes = useMemo(() => {
+  const [pendingNotes, completedNotes] = useMemo(() => {
     const needle = search.trim().toLowerCase();
     const matches = allNotes
-      .filter((note) => str(note, 'status', 'pending') !== 'completed')
       .filter((note) => !folderId || str(note, 'folderId', '') === folderId)
       .filter((note) => {
         if (!needle) return true;
         const tags = Array.isArray(note.tags) ? note.tags.join(' ') : '';
         return `${str(note, 'title', '')} ${str(note, 'content', '')} ${tags}`.toLowerCase().includes(needle);
       });
+    const isDone = (note: Item) => str(note, 'status', 'pending') === 'completed';
     // Pinned notes first, otherwise the existing newest-first order stands.
-    return [...matches].sort((first, second) => Number(second.pinned === true) - Number(first.pinned === true));
+    const pending = matches.filter((note) => !isDone(note))
+      .sort((first, second) => Number(second.pinned === true) - Number(first.pinned === true));
+    // Most recently finished first: the one someone comes looking for is
+    // usually the one they ticked a moment ago by mistake.
+    const finishedAt = (note: Item) => { const time = new Date(String(note.completedAt ?? '')).getTime(); return Number.isNaN(time) ? 0 : time; };
+    const completed = matches.filter(isDone).sort((first, second) => finishedAt(second) - finishedAt(first));
+    return [pending, completed];
   }, [allNotes, folderId, search]);
-  const focusNotes = notes.slice(0, 2);
+  // Completed notes used to leave the screen for good -- the list filtered them
+  // out and nothing showed them again -- so one ticked by mistake was stuck.
+  // The history is the same list, swapped, behind the "เสร็จแล้ว" count. Search
+  // and folders still apply to it; the focus card and the counts beside it go
+  // on describing open work whichever list is showing.
+  const [showCompleted, setShowCompleted] = useState(false);
+  const notes = showCompleted ? completedNotes : pendingNotes;
+  const focusNotes = pendingNotes.slice(0, 2);
   const completeCount = allNotes.filter((note) => str(note, 'status', 'pending') === 'completed').length;
-  const importantCount = notes.filter((note) => note.pinned === true).length;
+  const importantCount = pendingNotes.filter((note) => note.pinned === true).length;
   /** Opens a saved note in the editor. Without an id there is nothing to open. */
   const openNote = useCallback((note: Item) => {
     const id = str(note, 'id', '');
@@ -95,11 +108,29 @@ export default function NotesScreen({onNavigate, page, planner, uid}: Props) {
     }
   }, [completingId, load, uid]);
 
+  // The reverse of `markComplete`: back to pending with the finish time cleared,
+  // which the note rules accept as an ordinary update.
+  const markIncomplete = useCallback(async (note: Item) => {
+    const id = str(note, 'id', '');
+    if (!id || completingId) return;
+    setCompletingId(id);
+    setData((current) => current ? {...current, notes: list(current.notes).map((item) => str(item, 'id', '') === id ? {...item, completedAt: null, status: 'pending'} : item)} : current);
+    try {
+      await notesStore.update(uid, id, {completedAt: null, status: 'pending'});
+      showToast('ย้ายกลับไปโน้ตที่ค้างแล้ว', undefined, 'success');
+    } catch (error) {
+      await load().catch(() => undefined);
+      showToast('คืนกลับไม่สำเร็จ', error instanceof Error ? error.message : 'ลองใหม่อีกครั้ง');
+    } finally {
+      setCompletingId('');
+    }
+  }, [completingId, load, uid]);
+
   return <ResponsiveSafeArea style={styles.safe}><View style={styles.screen}><UserGradientBackdrop />
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={C.sage} />} showsVerticalScrollIndicator={false}>
       {/* Refactored UI: compact notes dashboard with category-aware counts and list. */}
       <View style={styles.header}><View><Text style={styles.eyebrow}>บันทึกของฉัน</Text><Text style={styles.title}>โน้ต</Text></View><Touchable accessibilityLabel="เพิ่มโน้ต" onPress={() => onNavigate('smartlife_add_note')} style={styles.add}><MaterialIcon color={C.ink} name="add" size={26} /></Touchable></View>
-      {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{([['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as [PlannerTab, string][]).map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Touchable>)}</View> : null}
+      {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{PLANNER_TABS.map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Touchable>)}</View> : null}
       <View style={styles.searchRow}>
         <MaterialIcon color="#8b948a" name="search" size={18} />
         <TextInput
@@ -126,14 +157,22 @@ export default function NotesScreen({onNavigate, page, planner, uid}: Props) {
         ))}
       </View> : null}
       <View style={styles.tabs}>{tabs.map((tab) => <Touchable key={tab.page} onPress={() => { if (planner) setPlannerFilter(tab.value); else onNavigate(tab.page); }} style={[styles.tab, active.page === tab.page && styles.tabActive]}><Text style={[styles.tabText, active.page === tab.page && styles.tabTextActive]}>{tab.label}</Text></Touchable>)}</View>
-      <View style={styles.metrics}><Metric label={active.value === 'all' ? 'กำลังทำ' : `โน้ต${active.label}`} value={notes.length} /><Metric label="เสร็จแล้ว" value={completeCount} /><Metric label="ปักหมุด" value={importantCount} /></View>
-      <View style={styles.sectionHead}><Text style={styles.sectionTitle}>{active.value === 'all' ? 'โน้ตล่าสุด' : `โน้ต${active.label}`}</Text><Touchable onPress={() => { if (planner) setPlannerFilter('all'); else onNavigate('smartlife_notes'); }}><Text style={styles.allLink}>ดูทั้งหมด</Text></Touchable></View>
-      {!data ? <View style={styles.loading}><ActivityIndicator color={C.sage} size="large" /><Text style={styles.loadingText}>กำลังโหลดโน้ตจาก Firebase</Text></View> : <Animated.View layout={LinearTransition.duration(200)} style={styles.noteList}>{notes.length ? notes.map((note, index) => <NoteRow busy={completingId === str(note, 'id', '')} category={categoryOf(note, active.value)} index={index} item={note} key={str(note, 'id', String(index))} onComplete={() => void markComplete(note)} onOpen={() => openNote(note)} />) : <View style={styles.empty}><MaterialIcon color="#9aa59a" name={search || folderId ? 'search_off' : 'task_alt'} size={34} /><Text style={styles.emptyText}>{search || folderId ? 'ไม่พบโน้ตที่ตรงกับที่ค้นหา' : 'ไม่มีโน้ตที่ค้างอยู่ในหมวดนี้'}</Text></View>}</Animated.View>}
+      <View style={styles.metrics}><Metric label={active.value === 'all' ? 'กำลังทำ' : `โน้ต${active.label}`} value={pendingNotes.length} /><Metric hint={showCompleted ? 'กำลังดูอยู่' : 'ดูประวัติ'} label="เสร็จแล้ว" onPress={() => setShowCompleted((current) => !current)} value={completeCount} /><Metric label="ปักหมุด" value={importantCount} /></View>
+      {showCompleted
+        ? <View style={styles.sectionHead}><Text style={styles.sectionTitle}>ประวัติที่ทำเสร็จแล้ว</Text><Touchable accessibilityRole="button" onPress={() => setShowCompleted(false)}><Text style={styles.allLink}>กลับไปโน้ตที่ค้าง</Text></Touchable></View>
+        : <View style={styles.sectionHead}><Text style={styles.sectionTitle}>{active.value === 'all' ? 'โน้ตล่าสุด' : `โน้ต${active.label}`}</Text><Touchable onPress={() => { if (planner) setPlannerFilter('all'); else onNavigate('smartlife_notes'); }}><Text style={styles.allLink}>ดูทั้งหมด</Text></Touchable></View>}
+      {!data ? <View style={styles.loading}><ActivityIndicator color={C.sage} size="large" /><Text style={styles.loadingText}>กำลังโหลดโน้ตจาก Firebase</Text></View> : <Animated.View layout={LinearTransition.duration(200)} style={styles.noteList}>{notes.length ? notes.map((note, index) => <NoteRow busy={completingId === str(note, 'id', '')} category={categoryOf(note, active.value)} completed={showCompleted} index={index} item={note} key={str(note, 'id', String(index))} onComplete={() => void (showCompleted ? markIncomplete(note) : markComplete(note))} onOpen={() => openNote(note)} />) : <View style={styles.empty}><MaterialIcon color="#9aa59a" name={search || folderId ? 'search_off' : 'task_alt'} size={34} /><Text style={styles.emptyText}>{search || folderId ? 'ไม่พบโน้ตที่ตรงกับที่ค้นหา' : showCompleted ? 'ยังไม่มีโน้ตที่ทำเสร็จ' : 'ไม่มีโน้ตที่ค้างอยู่ในหมวดนี้'}</Text></View>}</Animated.View>}
     </ScrollView><UserTabBar active={planner ? 'smartlife_planner' : 'smartlife_notes'} onNavigate={onNavigate} />
   </View></ResponsiveSafeArea>;
 }
 
-function Metric({label, value, color = C.pink}: {color?: string; label: string; value: number}) { return <View style={styles.metric}><Text style={[styles.metricValue, {color}]}>{value}</Text><Text style={styles.metricLabel}>{label}</Text></View>; }
+function Metric({hint, label, onPress, value, color = C.pink}: {color?: string; hint?: string; label: string; onPress?: () => void; value: number}) {
+  const body = <><Text style={[styles.metricValue, {color}]}>{value}</Text><Text style={styles.metricLabel}>{label}</Text>{hint ? <Text style={[styles.metricLabel, {color: C.pinkDeep}]}>{hint} ›</Text> : null}</>;
+  // A plain box gives no sign it can be pressed, hence the visible hint line.
+  return onPress
+    ? <Touchable accessibilityLabel={`${label} ${value} ${hint ?? ''}`} accessibilityRole="button" onPress={onPress} style={({pressed}) => [styles.metric, pressed && styles.pressed]}>{body}</Touchable>
+    : <View style={styles.metric}>{body}</View>;
+}
 
 function CompleteButton({busy, onPress}: {busy: boolean; onPress: () => void}) {
   const scale = useSharedValue(1);
@@ -154,7 +193,7 @@ function CompleteButton({busy, onPress}: {busy: boolean; onPress: () => void}) {
   );
 }
 
-function NoteRow({busy, category, index, item, onComplete, onOpen}: {busy: boolean; category: 'study' | 'work' | 'idea' | 'personal' | 'all'; index: number; item: Item; onComplete: () => void; onOpen: () => void}) {
+function NoteRow({busy, category, completed = false, index, item, onComplete, onOpen}: {busy: boolean; category: 'study' | 'work' | 'idea' | 'personal' | 'all'; completed?: boolean; index: number; item: Item; onComplete: () => void; onOpen: () => void}) {
   const theme = category === 'work' ? {bg: C.pinkSoft, color: C.pink, icon: 'push_pin', label: 'งาน'} : category === 'idea' ? {bg: C.yellowSoft, color: C.yellow, icon: 'lightbulb', label: 'ไอเดีย'} : category === 'personal' ? {bg: '#eceeea', color: '#7d877b', icon: 'person_outline', label: 'ส่วนตัว'} : {bg: C.sageSoft, color: C.sage, icon: 'description', label: 'เรียน'};
   const title = str(item, 'title');
   return (
@@ -163,11 +202,16 @@ function NoteRow({busy, category, index, item, onComplete, onOpen}: {busy: boole
         <View style={[styles.noteIcon, {backgroundColor: theme.bg}]}><MaterialIcon color={theme.color} name={theme.icon} size={19} /></View>
         <View style={{flex: 1}}>
           <View style={styles.noteTitleRow}>{item.pinned === true ? <MaterialIcon color="#c49497" name="push_pin" size={13} /> : null}{item.locked === true ? <MaterialIcon color="#8b948a" name="lock" size={13} /> : null}<Text numberOfLines={1} style={styles.noteTitle}>{title}</Text></View>
-          <Text numberOfLines={1} style={styles.noteSub}>{str(item, 'content', `อัปเดต ${date(item.updatedAt ?? item.createdAt)}`)}</Text>
+          <Text numberOfLines={1} style={styles.noteSub}>{completed ? `เสร็จเมื่อ ${date(item.completedAt)}` : str(item, 'content', `อัปเดต ${date(item.updatedAt ?? item.createdAt)}`)}</Text>
           <Text style={styles.noteCategory}>{theme.label}</Text>
         </View>
       </Touchable>
-      <CompleteButton busy={busy} onPress={onComplete} />
+      {completed
+        ? <Touchable accessibilityLabel={`คืน ${title} กลับไปโน้ตที่ค้าง`} accessibilityRole="button" disabled={busy} onPress={onComplete} style={({pressed}) => [styles.completeButton, {backgroundColor: C.pinkDeep}, pressed && styles.pressed, busy && {opacity: .55}]}>
+            {busy ? <ActivityIndicator color="#fff" size="small" /> : <MaterialIcon color="#fff" name="undo" size={16} />}
+            <Text style={styles.completeText}>คืนกลับ</Text>
+          </Touchable>
+        : <CompleteButton busy={busy} onPress={onComplete} />}
     </Animated.View>
   );
 }

@@ -73,6 +73,11 @@ export function LegacyUserTabBar({active, onNavigate}: {active?: string; onNavig
 // tab bar itself renders, instead of a hand-copied one that can drift.
 export const USER_LEFT_TABS = [['home', 'หน้าหลัก', 'index'], ['calendar_month', 'แพลนเนอร์', 'smartlife_planner']];
 export const USER_RIGHT_TABS = [['account_balance_wallet', 'การเงิน', 'smartlife_finance_day'], ['person', 'โปรไฟล์', 'smartlife_profile']];
+// The ตาราง/โน้ต/Adaptive switcher inside the planner. Held here, beside the tab
+// bar lists, because three screens draw it and the usage guide pictures it:
+// one list means a renamed tab cannot leave a stale copy in any of them.
+// It lives here rather than in planner-screen, which imports those screens.
+export const PLANNER_TABS = [['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as const;
 
 // Added for Merged Planner: a symmetrical 2-1-2 navigation with a central OCR scanner.
 // The current tab's icon springs up into place when its screen opens, so the

@@ -42,7 +42,7 @@ function periodText(page: Page) { return page === 'smartlife_finance_week' ? '�
 // The budget card always sets one monthly limit, whichever tab is open. Only
 // the wording follows the tab, so the split it promises is the one the user is
 // actually looking at instead of always naming the weekly frame.
-function budgetCardTitle(period: Period) {
+export function budgetCardTitle(period: Period) {
   if (period === 'day') return 'กำหนดงบรายวัน';
   if (period === 'month') return 'กำหนดขอบเขตการใช้';
   return 'กำหนดงบและกรอบรายสัปดาห์';

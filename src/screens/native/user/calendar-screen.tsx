@@ -15,7 +15,7 @@ import AiActivityRecommendationCard from '@/components/ai-activity-recommendatio
 import ConfirmDialog from '@/components/confirm-dialog';
 import {activities, deleteCourseSeries, schedules} from '@/services/firestore';
 import {recordTaskCompleted, recordTaskPostponed} from '@/services/behavior-tracking';
-import {MaterialIcon, UserTabBar} from './user-ui';
+import {MaterialIcon, PLANNER_TABS, UserTabBar} from './user-ui';
 import {showToast} from '@/components/app-toast';
 import {useTourTarget} from '@/hooks/use-tour-target';
 import {useTour} from '@/providers/tour-provider';
@@ -536,7 +536,7 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
               <Touchable accessibilityLabel="เพิ่มรายการ" accessibilityRole="button" onPress={() => onNavigate('smartlife_add_activity')} style={styles.circleButton}><MaterialIcon color={C.accent} name="add" size={24} /></Touchable>
             </View>
           </View>
-          {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{([['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as [PlannerTab, string][]).map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Touchable>)}</View> : null}
+          {planner ? <View accessibilityRole="tablist" style={styles.plannerTabs}>{PLANNER_TABS.map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.plannerTab, planner.activeTab === key && styles.plannerTabActive]}><Text style={[styles.plannerTabText, planner.activeTab === key && styles.plannerTabTextActive]}>{label}</Text></Touchable>)}</View> : null}
 
           <GoogleCalendarSyncCard onSynced={load} uid={uid} />
           <AiActivityRecommendationCard onNavigate={onNavigate} uid={uid} />

@@ -18,7 +18,7 @@ import {
 } from '@/services/adaptive-scheduling';
 import ScheduleConflictDialog from '@/components/schedule-conflict-dialog';
 import ConfirmDialog from '@/components/confirm-dialog';
-import {MaterialIcon, UserShell, type UserNavigate} from './user-ui';
+import {MaterialIcon, PLANNER_TABS, UserShell, type UserNavigate} from './user-ui';
 import {registerAdaptivePushNotifications} from '@/services/push-notifications';
 import {showToast} from '@/components/app-toast';
 
@@ -513,7 +513,7 @@ function FlowDetail({icon, label, value}: {icon: string; label: string; value: s
   return <View style={styles.flowDetail}><View style={styles.flowDetailIcon}><MaterialIcon color="#5c7c59" name={icon} size={18} /></View><View style={{flex: 1}}><Text style={styles.flowDetailLabel}>{label}</Text><Text style={styles.flowDetailValue}>{value}</Text></View></View>;
 }
 
-function PlannerTabs({planner}: {planner: Planner}) { return <View accessibilityRole="tablist" style={styles.tabs}>{([['calendar', 'ตาราง'], ['notes', 'โน้ต'], ['adaptive', 'Adaptive']] as [PlannerTab, string][]).map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.tab, planner.activeTab === key && styles.tabActive]}><Text style={[styles.tabText, planner.activeTab === key && styles.tabTextActive]}>{label}</Text></Touchable>)}</View>; }
+function PlannerTabs({planner}: {planner: Planner}) { return <View accessibilityRole="tablist" style={styles.tabs}>{PLANNER_TABS.map(([key, label]) => <Touchable accessibilityRole="tab" accessibilityState={{selected: planner.activeTab === key}} key={key} onPress={() => planner.onTabChange(key)} style={[styles.tab, planner.activeTab === key && styles.tabActive]}><Text style={[styles.tabText, planner.activeTab === key && styles.tabTextActive]}>{label}</Text></Touchable>)}</View>; }
 function Section({children, subtitle, title}: {children: React.ReactNode; subtitle?: string; title: string}) { return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{subtitle ? <Text style={styles.caption}>{subtitle}</Text> : null}<View style={styles.sectionBody}>{children}</View></View>; }
 function Empty({label}: {label: string}) { return <View style={styles.empty}><MaterialIcon color="#9aa399" name="event_busy" size={22} /><Text style={styles.emptyText}>{label}</Text></View>; }
 function SmallButton({danger = false, disabled = false, label, loading = false, onPress}: {danger?: boolean; disabled?: boolean; label: string; loading?: boolean; onPress: () => void}) { return <Touchable accessibilityRole="button" accessibilityState={{busy: loading, disabled: disabled || loading}} disabled={disabled || loading} onPress={onPress} style={({pressed}) => [styles.smallButton, danger && styles.smallButtonDanger, (disabled || loading) && styles.disabled, pressed && !disabled && !loading && styles.buttonPressed]}>{loading ? <ActivityIndicator color={danger ? '#a75f59' : '#597358'} size="small" /> : null}<Text style={[styles.smallButtonText, danger && styles.smallButtonDangerText]}>{loading ? 'กำลังตรวจ…' : label}</Text></Touchable>; }
