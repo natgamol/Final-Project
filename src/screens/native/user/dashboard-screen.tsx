@@ -14,6 +14,7 @@ import {Timestamp} from 'firebase/firestore';
 import {loadLegacyPageData, runLegacyDataAction} from '@/services/legacy-data';
 import {calculateDailyAllowance, type DailyAllowance} from '@/services/dynamic-insights';
 import {loadMonthlyBudget} from '@/services/monthly-budget';
+import {fundsOverage, monthFundsFrom} from '@/services/transaction-funds';
 import {buildNotificationFeed, isRankable, itemsOf as items, millis, priorityReasons, priorityScore, string, unreadCount, type FeedItem} from '@/services/notification-feed';
 import {activities as activitiesStore, notes as notesStore} from '@/services/firestore';
 import {recordTaskCompleted} from '@/services/behavior-tracking';
@@ -54,8 +55,8 @@ const SoftPress = forwardRef<View, {children: React.ReactNode; onLayout?: () => 
   },
 );
 
-function StatCard({icon, value, label, tint = colors.sageSoft}: {icon: string; value: string | number; label: string; tint?: string}) {
-  return <View style={styles.statCard}><View style={[styles.statIcon, {backgroundColor: tint}]}><MaterialIcon color={colors.sageDark} name={icon} size={18} /></View>{typeof value === 'number' ? <AnimatedNumber adjustsFontSizeToFit minimumFontScale={.7} numberOfLines={1} style={styles.statValue} value={value} /> : <Text adjustsFontSizeToFit minimumFontScale={.7} numberOfLines={1} style={styles.statValue}>{value}</Text>}<Text style={styles.statLabel}>{label}</Text></View>;
+function StatCard({value, label}: {value: string | number; label: string}) {
+  return <View style={styles.statCard}>{typeof value === 'number' ? <AnimatedNumber adjustsFontSizeToFit minimumFontScale={.7} numberOfLines={1} style={styles.statValue} value={value} /> : <Text adjustsFontSizeToFit minimumFontScale={.7} numberOfLines={1} style={styles.statValue}>{value}</Text>}<Text style={styles.statLabel}>{label}</Text></View>;
 }
 
 const QUICK_ACTIONS = [
@@ -182,8 +183,12 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
   // Both budget surfaces read from the same allowance, so the tile and the
   // assistant's instant answer can never quote different numbers.
   const allowanceValue = allowance ? money(allowance.amount) : '—';
+  // The limit is one ceiling and the money actually taken in is another;
+  // spending can pass both, and only the first was ever reported. The second
+  // uses the same funds rule as the bell's alert and the pre-save prompt.
+  const fundsOver = fundsOverage(monthFundsFrom(monthTransactions));
   const allowanceAnswer = !allowance ? 'ตั้งงบเดือนนี้ก่อน'
-    : allowance.overBudget ? `เกินงบแล้ว ${money(Math.abs(allowance.remainingBudget))}`
+    : allowance.overBudget ? `เกินงบที่ตั้งไว้ ${money(Math.abs(allowance.remainingBudget))}${fundsOver ? ` และเกินเงินที่มีทั้งหมด ${money(fundsOver)}` : ''}`
     : `ตอบทันที: วันนี้ใช้ได้อีก ${money(allowance.amount)}`;
   // The card headlines the same allowance as the tile above it -- it used to
   // show a day's income minus expenses, which sat at ฿0 next to a tile saying
@@ -289,7 +294,7 @@ export default function DashboardScreen({onNavigate, uid}: Props) {
         {showDevTools && pending.length === 0 && transactions.length === 0 ? <Touchable disabled={seeding} onPress={seedAiDynamicData} style={({pressed}) => [styles.seedCard, pressed && styles.pressed, seeding && {opacity: .6}]}><View style={styles.seedIcon}><MaterialIcon color="#8a611c" name="database" size={20} /></View><View style={{flex: 1}}><View style={styles.seedHeadingRow}><Text style={styles.seedTitle}>เติมข้อมูลทดสอบ AI Dynamic</Text><View style={styles.devTag}><Text style={styles.devTagText}>DEV</Text></View></View><Text style={styles.seedSub}>เพิ่มตาราง งาน โน้ต และการเงินเข้า Firebase ของบัญชีนี้</Text></View><Text style={styles.seedAction}>{seeding ? 'กำลังเพิ่ม...' : 'เพิ่มเลย'}</Text></Touchable> : null}
 
         <Reveal index={4}>
-        <View style={styles.stats}><StatCard icon="calendar_today" label="คลาสเรียน" value={schedules.length} /><StatCard icon="task_alt" label="งานที่ต้องทำ" tint={colors.noteSoft} value={pending.length} /><StatCard icon="account_balance_wallet" label={allowance ? 'งบวันนี้' : 'ยังไม่ได้ตั้งงบ'} tint={colors.financeSoft} value={allowanceValue} /></View>
+        <View style={styles.stats}><StatCard label="คลาสเรียน" value={schedules.length} /><StatCard label="งานที่ต้องทำ" value={pending.length} /><StatCard label={allowance ? 'งบคงเหลือวันนี้' : 'ยังไม่ได้ตั้งงบ'} value={allowanceValue} /></View>
         </Reveal>
 
         <Reveal index={5}>
@@ -435,7 +440,6 @@ const styles = StyleSheet.create({
   sectionTitle: {color: colors.pine, fontFamily: font.bold, fontSize: 15},
   seeAll: {color: colors.sageDark, fontFamily: font.semibold, fontSize: 12},
   statCard: {...shadow, alignItems: 'center', backgroundColor: '#fff', borderRadius: 17, flex: 1, height: 101, justifyContent: 'center'},
-  statIcon: {alignItems: 'center', borderRadius: 17, height: 34, justifyContent: 'center', width: 34},
   statLabel: {color: colors.muted, fontFamily: font.regular, fontSize: 12, marginTop: 1, textAlign: 'center'},
   statValue: {color: colors.pine, fontFamily: font.extra, fontSize: 19, marginTop: 4},
   stats: {flexDirection: 'row', gap: 10, marginBottom: 17},

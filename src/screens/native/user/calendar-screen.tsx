@@ -1,10 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {ActivityIndicator, Modal, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View} from 'react-native';
+import {ActivityIndicator, Animated as RNAnimated, Modal, PanResponder, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View} from 'react-native';
 import {Touchable} from '@/components/touchable';
 import Animated, {FadeIn, FadeOut, LinearTransition} from 'react-native-reanimated';
 import {CalendarList, CalendarProvider, WeekCalendar, type DateData} from 'react-native-calendars';
 import {Timestamp} from 'firebase/firestore';
+import {useLocalSearchParams} from 'expo-router';
 
 
 import {registerThaiCalendarLocale, THAI_MONTH_NAMES} from '@/lib/calendar-locale';
@@ -150,21 +151,22 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
   }, [maybeStartTour]);
   const {width} = useWindowDimensions();
   const calendarWidth = Math.min(Math.max(width - 32, 310), width >= 900 ? 1168 : 680);
-  // Both the header circle button and the FAB used to jump straight to "add
-  // activity" -- a plain "+" icon with no visible label, so a first-time user
-  // had no way to know it would not offer appointment/task/etc. They now open
-  // the same choice sheet the tab bar's "+" already uses.
   const [today] = useState(todayKey);
-  const [mode, setMode] = useState<ViewMode>(page === 'smartlife_calendar_month' ? 'month' : page === 'smartlife_calendar_week' ? 'week' : 'day');
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [visibleDate, setVisibleDate] = useState(today);
+  // A `date` in the address is a day someone was sent to -- the activity form
+  // passes the one it just saved. It opens in day mode, so the new item is on
+  // screen rather than selected somewhere beneath a week or month view.
+  const params = useLocalSearchParams<{date?: string}>();
+  const requestedDate = typeof params.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(params.date) ? params.date : null;
+  const [mode, setMode] = useState<ViewMode>(requestedDate ? 'day' : page === 'smartlife_calendar_month' ? 'month' : page === 'smartlife_calendar_week' ? 'week' : 'day');
+  const [selectedDate, setSelectedDate] = useState(requestedDate ?? today);
+  const [visibleDate, setVisibleDate] = useState(requestedDate ?? today);
   /**
    * The month the list is anchored to. Moved only by a deliberate navigation,
    * never by scrolling -- that separation is what stops the list from chasing
    * its own scroll position, while `visibleDate` still follows the swipe so
    * the header and the agenda track what is actually on screen.
    */
-  const [monthAnchor, setMonthAnchor] = useState(today);
+  const [monthAnchor, setMonthAnchor] = useState(requestedDate ?? today);
   /**
    * Bumped by every deliberate navigation, including one that re-selects the
    * month already anchored. Swiping moves the list without moving the anchor,
@@ -233,6 +235,44 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
     anchorTo(value);
     if (showDetails) setDetailsOpen(true);
   };
+  useEffect(() => {
+    if (!requestedDate) return;
+    setMode('day');
+    setSelectedDate(requestedDate);
+    setVisibleDate(requestedDate);
+    setMonthAnchor(requestedDate);
+    setReanchor((count) => count + 1);
+  }, [requestedDate]);
+  // Swipe down on the day sheet's header to dismiss it. The handle drawn there
+  // always promised this, but a plain Modal has no such gesture, so the pill
+  // did nothing and only the X closed the sheet.
+  //
+  // Only the header takes the drag, not the whole sheet: below it is the event
+  // list, a ScrollView, and a responder over it would fight every scroll.
+  // A drag claims the responder only once it is clearly downward, so a tap on
+  // the header still reaches whatever is under it.
+  const [sheetDrag] = useState(() => new RNAnimated.Value(0));
+  const sheetPan = useMemo(() => {
+    const native = Platform.OS !== 'web';
+    const settle = () => RNAnimated.spring(sheetDrag, {bounciness: 4, toValue: 0, useNativeDriver: native}).start();
+    return PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => gesture.dy > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+      onPanResponderMove: (_, gesture) => sheetDrag.setValue(Math.max(0, gesture.dy)),
+      onPanResponderRelease: (_, gesture) => {
+        // Far enough, or flicked: finish the slide, then close. Otherwise the
+        // sheet springs back to where it was.
+        if (gesture.dy > 110 || gesture.vy > 0.85) {
+          RNAnimated.timing(sheetDrag, {duration: 170, toValue: 640, useNativeDriver: native}).start(() => {
+            setDetailsOpen(false);
+            sheetDrag.setValue(0);
+          });
+        } else {
+          settle();
+        }
+      },
+      onPanResponderTerminate: settle,
+    });
+  }, [sheetDrag]);
   const navigate = (direction: number) => {
     const next = shift(visibleDate, mode, direction);
     setVisibleDate(next);
@@ -526,12 +566,18 @@ export default function CalendarScreen({onNavigate, page, planner, uid}: Props) 
 
         <Modal animationType="slide" onRequestClose={() => setDetailsOpen(false)} transparent visible={detailsOpen}>
           <View style={styles.overlay}>
-            <View style={styles.sheet}>
-              <View style={styles.handle} />
-              <View style={styles.sheetHead}><View><Text style={styles.sheetTitle}>{formatLongDate(selectedDate)}</Text><Text style={styles.sheetSub}>{selectedEvents.length} รายการ</Text></View><Touchable onPress={() => setDetailsOpen(false)} style={styles.close}><MaterialIcon color={C.secondary} name="close" size={20} /></Touchable></View>
+            {/* With the X gone, the dimmed space above the sheet closes it as
+                well. A desktop browser has no back button and a mouse user may
+                never think to drag, so the sheet must not become a dead end. */}
+            <Pressable accessibilityLabel="ปิดรายละเอียดวัน" onPress={() => setDetailsOpen(false)} style={StyleSheet.absoluteFill} />
+            <RNAnimated.View style={[styles.sheet, {transform: [{translateY: sheetDrag}]}]}>
+              <View {...sheetPan.panHandlers} accessibilityHint="ปัดลงเพื่อปิด">
+                <View style={styles.handle} />
+                <View style={styles.sheetHead}><View><Text style={styles.sheetTitle}>{formatLongDate(selectedDate)}</Text><Text style={styles.sheetSub}>{selectedEvents.length} รายการ</Text></View></View>
+              </View>
               <ScrollView style={styles.sheetScroll}>{selectedEvents.length ? selectedEvents.map((event, index) => <EventRow completing={completingId === event.id} event={event} key={String(event.id ?? index)} onComplete={event.entityType === 'activity' ? () => void completeEvent(event) : undefined} onDelete={() => deleteEvent(event)} onPostpone={event.entityType === 'activity' ? () => setPostponing(event) : undefined} />) : <EmptyAgenda />}</ScrollView>
               <Touchable onPress={() => { setDetailsOpen(false); onNavigate('smartlife_add_activity'); }} style={styles.sheetAdd}><MaterialIcon color="#fff" name="add" size={20} /><Text style={styles.sheetAddText}>เพิ่มกิจกรรม</Text></Touchable>
-            </View>
+            </RNAnimated.View>
           </View>
         </Modal>
 

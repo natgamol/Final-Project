@@ -12,7 +12,7 @@ import ConfirmDialog from '@/components/confirm-dialog';
 import {thailandRange, thailandDateKey, thailandCalendarParts} from '@/lib/thailand-time';
 import {calculateDailyAllowance, calculateFinanceBudgetInsight} from '@/services/dynamic-insights';
 import {loadLegacyPageData, runLegacyDataAction} from '@/services/legacy-data';
-import {exceedsAvailableFunds, monthFundsFor} from '@/services/transaction-funds';
+import {exceedsAvailableFunds, fundsOverage, monthFundsFor, monthFundsFrom} from '@/services/transaction-funds';
 import {INCOME_SOURCES} from '@/config/income-sources';
 import {showToast, toastMessage} from '@/components/app-toast';
 import {currentMonthKey, loadMonthlyBudget} from '@/services/monthly-budget';
@@ -165,23 +165,29 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
     const monthlyAmount = monthlyBudget?.amount ?? 0;
     const insight = calculateFinanceBudgetInsight({dailyBudget: monthlyBudget?.daily, monthlyBudget: monthlyAmount, transactions: monthTransactions, weeklyBudget: monthlyBudget?.weekly});
     if (!insight) return {over: false, title: 'ยังไม่ได้ตั้งงบเดือนนี้', detail: 'ตั้งวงเงินแล้วหน้านี้จะบอกยอดที่ใช้ได้ของแต่ละช่วง'};
+    // Over the limit and over the money actually taken in are separate facts.
+    // Only the first was ever stated; the second uses the same funds rule as
+    // the bell's alert and the pre-save prompt, so they cannot disagree.
+    const fundsOver = fundsOverage(monthFundsFrom(monthTransactions));
+    const andFunds = fundsOver ? ` และเกินเงินที่มีทั้งหมด ${money(fundsOver)}` : '';
+    const fundsNote = fundsOver ? ` · เกินเงินที่มีทั้งหมด ${money(fundsOver)}` : '';
     if (period === 'day') {
       const allowance = calculateDailyAllowance({dailyBudget: monthlyBudget?.daily, monthlyBudget: monthlyAmount, transactions: monthTransactions, weeklyBudget: monthlyBudget?.weekly});
       if (!allowance) return null;
       const monthUsed = insight.monthlyBudget > 0 ? insight.spentSoFar / insight.monthlyBudget : 0;
       return allowance.overBudget
-        ? {over: true, title: `เกินงบเดือนนี้ ${money(Math.abs(allowance.remainingBudget))}`, detail: `ใช้ไปแล้ว ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`, label: 'เกินงบเดือนนี้', amount: Math.abs(allowance.remainingBudget), ratio: monthUsed}
+        ? {over: true, title: `เกินงบที่ตั้งไว้ ${money(Math.abs(allowance.remainingBudget))}${andFunds}`, detail: `ใช้ไปแล้ว ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}${fundsNote}`, label: 'เกินงบเดือนนี้', amount: Math.abs(allowance.remainingBudget), ratio: monthUsed}
         : {over: false, title: `งบวันนี้ใช้ได้อีก ${money(allowance.amount)}`, detail: `เหลือทั้งเดือน ${money(allowance.remainingBudget)} ใน ${insight.daysRemainingIncludingToday} วันที่เหลือ`, label: 'งบวันนี้ใช้ได้อีก', amount: allowance.amount, ratio: monthUsed};
     }
     if (period === 'week') {
       const weekUsed = insight.weeklyBudget > 0 ? insight.weekSpent / insight.weeklyBudget : 0;
       return insight.weeklyRemainingBudget < 0
-        ? {over: true, title: `เกินงบสัปดาห์นี้ ${money(Math.abs(insight.weeklyRemainingBudget))}`, detail: `ใช้ ${money(insight.weekSpent)} จากงบสัปดาห์ ${money(insight.weeklyBudget)}`, label: 'เกินงบสัปดาห์นี้', amount: Math.abs(insight.weeklyRemainingBudget), ratio: weekUsed}
+        ? {over: true, title: `เกินงบสัปดาห์นี้ ${money(Math.abs(insight.weeklyRemainingBudget))}${andFunds}`, detail: `ใช้ ${money(insight.weekSpent)} จากงบสัปดาห์ ${money(insight.weeklyBudget)}${fundsNote}`, label: 'เกินงบสัปดาห์นี้', amount: Math.abs(insight.weeklyRemainingBudget), ratio: weekUsed}
         : {over: false, title: `งบสัปดาห์นี้เหลือ ${money(insight.weeklyRemainingBudget)}`, detail: `ใช้ไป ${insight.weeklyUsagePercent}% ของงบสัปดาห์ ${money(insight.weeklyBudget)}`, label: 'งบสัปดาห์นี้เหลือ', amount: insight.weeklyRemainingBudget, ratio: weekUsed};
     }
     const used = insight.monthlyBudget > 0 ? insight.spentSoFar / insight.monthlyBudget : 0;
     return insight.remainingBudget < 0
-      ? {over: true, title: `เกินงบเดือนนี้ ${money(Math.abs(insight.remainingBudget))}`, detail: `ใช้ ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`, label: 'เกินงบเดือนนี้', amount: Math.abs(insight.remainingBudget), ratio: used}
+      ? {over: true, title: `เกินงบที่ตั้งไว้ ${money(Math.abs(insight.remainingBudget))}${andFunds}`, detail: `ใช้ ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}${fundsNote}`, label: 'เกินงบเดือนนี้', amount: Math.abs(insight.remainingBudget), ratio: used}
       : {over: false, title: `งบเดือนนี้เหลือ ${money(insight.remainingBudget)}`, detail: `ใช้ไป ${money(insight.spentSoFar)} จากลิมิต ${money(insight.monthlyBudget)}`, label: 'งบเดือนนี้เหลือ', amount: insight.remainingBudget, ratio: used};
   }, [isCurrentPeriod, monthTransactions, monthlyBudget, period]);
   const categoryTotals = useMemo(() => Array.from(all.filter((item) => item.type === 'expense').reduce((map, item) => { const category = normalizeExpenseCategory(str(item, 'category', '')); map.set(category, (map.get(category) ?? 0) + Number(item.amount ?? 0)); return map; }, new Map<string, number>()).entries()).slice(0, 3), [all]);

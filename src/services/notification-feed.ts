@@ -207,7 +207,7 @@ function financeAlerts(insight: FinanceBudgetInsight | null, allowance: DailyAll
       message: over
         ? `วันนี้ใช้ ${money(tension.todaySpent)} จากลิมิตวันละ ${money(tension.dailyLimit)} เกินมา ${money(tension.todayRemaining)}`
         : `วันนี้ใช้ ${money(tension.todaySpent)} จากลิมิตวันละ ${money(tension.dailyLimit)} เหลือ ${money(tension.todayRemaining)}`,
-      reasons: allowance ? [`งบที่ใช้ได้ต่อวัน ${money(allowance.amount)}`, tension.label] : [tension.label],
+      reasons: allowance ? [`งบที่เหลือวันนี้ ${money(allowance.amount)}`, tension.label] : [tension.label],
       severity: over ? 'urgent' : 'warning',
       source: 'finance',
       title: over ? 'เกินงบวันนี้' : 'งบวันนี้เริ่มตึง',

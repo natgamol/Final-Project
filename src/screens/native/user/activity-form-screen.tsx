@@ -206,7 +206,10 @@ export default function ActivityFormScreen({page, uid, onNavigate}: {page: FormP
         : `เพิ่ม${copy.title.replace('เพิ่ม', '')}ลงตารางเวลาแล้ว`,
       'success',
     );
-    onNavigate(form.target);
+    // Land on the day just saved so the save can be seen rather than taken on
+    // trust. The calendar opens on today otherwise, and an item added for next
+    // Tuesday was nowhere on screen when the form closed.
+    onNavigate(isTransaction ? form.target : `${form.target}?date=${thailandDateKey(new Date(String(payload.startAt)))}`);
   };
 
   const save = async () => {

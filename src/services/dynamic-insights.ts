@@ -19,6 +19,8 @@ export type FinanceBudgetInsight = {
   remainingDailyBudget: number;
   runwayDays: number | null;
   spentSoFar: number;
+  /** Expenses dated today in Bangkok, already included in `spentSoFar`. */
+  todaySpent: number;
   weekEnd: string;
   weekSpent: number;
   weekStart: string;
@@ -112,19 +114,33 @@ export function calculateFinanceBudgetInsight({dailyBudget, monthlyBudget, now =
   const setDaily = Number.isFinite(dailyBudget) && (dailyBudget ?? 0) > 0 ? dailyBudget as number : null;
   const setWeekly = Number.isFinite(weeklyBudget) && (weeklyBudget ?? 0) > 0 ? weeklyBudget as number : null;
   const averageDailyBudget = setDaily ?? roundMoney(monthlyBudget / totalDays);
-  // With a daily limit set, "what is left today" is that limit rather than the
-  // month's remainder re-spread: re-spreading it would quietly overwrite the
-  // number the user chose. The month running out still wins, so this cannot
-  // report room that the monthly limit no longer has.
-  const remainingDailyBudget = remainingBudget <= 0 ? 0
-    : setDaily ?? roundMoney(remainingBudget / daysRemainingIncludingToday);
-  const expectedSpentByToday = monthlyBudget / totalDays * currentDay;
-  const overspendAmount = Math.max(0, spentSoFar - expectedSpentByToday);
   const dailyExpenses = expenses.reduce((map, item) => {
     const occurredAt = toDate(item.occurredAt);
     if (occurredAt) map.set(thailandDateKey(occurredAt), (map.get(thailandDateKey(occurredAt)) ?? 0) + Number(item.amount ?? 0));
     return map;
   }, new Map<string, number>());
+  const todaySpent = dailyExpenses.get(thailandDateKey(now)) ?? 0;
+
+  // What is still spendable today: today's allowance less what today has
+  // already spent.
+  //
+  // Both halves used to be wrong in their own way. With a daily limit set this
+  // returned the limit itself, so ฿100 a day read ฿100 after an ฿80 coffee.
+  // Without one it divided the month's remainder by the days left, today's
+  // spending included -- so the same ฿80 moved today's figure by ฿80 spread
+  // over the rest of the month, a few baht, rather than by ฿80.
+  //
+  // Today's allowance is therefore fixed at the start of the day -- the limit
+  // the user set, or the month's remainder as it stood before today spread
+  // over the days left -- and today's spending comes straight off it. The
+  // month still wins over both: once it is spent there is nothing left today,
+  // and today can never offer more than the month has left.
+  const remainingAtStartOfToday = monthlyBudget - (spentSoFar - todaySpent);
+  const todayAllowance = setDaily ?? remainingAtStartOfToday / daysRemainingIncludingToday;
+  const remainingDailyBudget = remainingBudget <= 0 ? 0
+    : roundMoney(Math.min(todayAllowance - todaySpent, remainingBudget));
+  const expectedSpentByToday = monthlyBudget / totalDays * currentDay;
+  const overspendAmount = Math.max(0, spentSoFar - expectedSpentByToday);
   const averageActualDailyExpense = dailyExpenses.size
     ? Array.from(dailyExpenses.values()).reduce((sum, value) => sum + value, 0) / dailyExpenses.size : 0;
   const runwayDays = averageActualDailyExpense > 0 && remainingBudget > 0 ? Math.floor(remainingBudget / averageActualDailyExpense) : null;
@@ -153,7 +169,7 @@ export function calculateFinanceBudgetInsight({dailyBudget, monthlyBudget, now =
     averageDailyBudget, daysInMonth: totalDays, daysRemainingIncludingToday,
     expectedSpentByToday: Math.round(expectedSpentByToday), financePressureLevel,
     monthKey: thailandMonthKey(now), monthlyBudget, overspendAmount: Math.round(overspendAmount),
-    remainingBudget: Math.round(remainingBudget), remainingDailyBudget, runwayDays, spentSoFar,
+    remainingBudget: Math.round(remainingBudget), remainingDailyBudget, runwayDays, spentSoFar, todaySpent: Math.round(todaySpent),
     weekEnd: thailandDateKey(weekEnd), weekSpent: Math.round(weekSpent), weekStart: thailandDateKey(weekStart),
     weeklyBudget: weeklyBudgetValue, weeklyRemainingBudget, weeklyStatus, weeklyUsagePercent,
   };

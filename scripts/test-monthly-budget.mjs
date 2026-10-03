@@ -198,12 +198,37 @@ assert.equal(calculateDailyAllowance({monthlyBudget: Number.NaN, now, transactio
   assert.equal(weekly.monthlyBudget, plain.monthlyBudget, 'the monthly limit is untouched by a weekly override');
   assert.equal(weekly.spentSoFar, plain.spentSoFar, 'and so is the spending it reports');
 
-  // A daily override becomes what is left today, instead of re-spreading the
-  // month's remainder over the days left.
+  // A daily override is today's allowance; what is left today is that less
+  // what today has already spent. `spending` puts ฿400 on today, more than the
+  // ฿150 limit, so nothing is left.
   const daily = calculateFinanceBudgetInsight({dailyBudget: 150, monthlyBudget: 6200, now, transactions: spending});
-  assert.equal(daily.averageDailyBudget, 150, 'the daily figure is the one that was set');
-  assert.equal(daily.remainingDailyBudget, 150, 'and it is what today has left');
-  assert.notEqual(plain.remainingDailyBudget, 150, 'which the even split would not have produced');
+  assert.equal(daily.averageDailyBudget, 150, 'the per-day allocation is the one that was set');
+  assert.equal(daily.todaySpent, 400, 'today is counted on its own');
+  assert.equal(daily.remainingDailyBudget, 0, 'spending past the daily limit leaves nothing today, not the limit');
+
+  // The reported case: ฿100 a day, ฿80 spent today. It used to stay at ฿100.
+  const reported = calculateFinanceBudgetInsight({
+    dailyBudget: 100, monthlyBudget: 6200, now,
+    transactions: [tx(900, '2026-08-05T06:00:00Z'), tx(80, '2026-08-19T05:00:00Z')],
+  });
+  assert.equal(reported.remainingDailyBudget, 20, '฿100 a day less ฿80 spent today is ฿20');
+  assert.equal(reported.averageDailyBudget, 100, 'while the allocation itself stays ฿100');
+
+  // Without an override, today's spending comes off today in full rather than
+  // being spread over every day left in the month.
+  const spreadBefore = calculateFinanceBudgetInsight({monthlyBudget: 6200, now, transactions: [tx(900, '2026-08-05T06:00:00Z')]});
+  const spreadAfter = calculateFinanceBudgetInsight({
+    monthlyBudget: 6200, now,
+    transactions: [tx(900, '2026-08-05T06:00:00Z'), tx(80, '2026-08-19T05:00:00Z')],
+  });
+  assert.equal(
+    spreadBefore.remainingDailyBudget - spreadAfter.remainingDailyBudget, 80,
+    'an ฿80 expense today takes ฿80 off today, not ฿80 divided by the days left',
+  );
+
+  // Today can never offer more than the month still has.
+  const tight = calculateFinanceBudgetInsight({dailyBudget: 300, monthlyBudget: 1000, now, transactions: [tx(950, '2026-08-05T06:00:00Z')]});
+  assert.equal(tight.remainingDailyBudget, 50, 'a ฿300 daily limit with ฿50 left in the month leaves ฿50');
 
   // The month still wins: an override cannot report room the month has spent.
   const blown = calculateFinanceBudgetInsight({dailyBudget: 150, monthlyBudget: 1000, now, transactions: [tx(1800, '2026-08-05T06:00:00Z')]});
@@ -211,8 +236,11 @@ assert.equal(calculateDailyAllowance({monthlyBudget: Number.NaN, now, transactio
 
   // The allowance wrapper passes both through rather than recomputing.
   assert.equal(
-    calculateDailyAllowance({dailyBudget: 150, monthlyBudget: 6200, now, transactions: spending}).amount, 150,
-    'the daily allowance honours an override too',
+    calculateDailyAllowance({
+      dailyBudget: 100, monthlyBudget: 6200, now,
+      transactions: [tx(900, '2026-08-05T06:00:00Z'), tx(80, '2026-08-19T05:00:00Z')],
+    }).amount, 20,
+    'the allowance the dashboard tile reads is the live figure too',
   );
   assert.equal(
     calculateDailyAllowance({monthlyBudget: 6200, now, transactions: spending}).amount,

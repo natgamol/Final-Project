@@ -6,6 +6,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
 import {Touchable} from '@/components/touchable';
 import {calculateFinanceBudgetInsight} from '@/services/dynamic-insights';
+import {fundsOverage, monthFundsFrom} from '@/services/transaction-funds';
 import {thailandDaysInMonth} from '@/lib/thailand-time';
 import {loadLegacyPageData} from '@/services/legacy-data';
 import {currentMonthKey, loadMonthlyBudget, parseBudgetAmount, saveMonthlyBudget, type MonthlyBudget} from '@/services/monthly-budget';
@@ -73,6 +74,11 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
   // read-out and the AI assistant.
   const selectedAmount = parseMoney(amountText);
   const overspend = Math.max(0, expense - selectedAmount);
+  // The same funds rule the finance page, the dashboard and the bell use.
+  const fundsOver = fundsOverage(monthFundsFrom(transactions.map((row) => ({
+    amount: Number(row.amount ?? 0),
+    type: row.type === 'income' ? 'income' as const : 'expense' as const,
+  }))));
   const remaining = Math.max(0, selectedAmount - expense);
   const usedPercent = selectedAmount > 0 ? Math.round(expense / selectedAmount * 100) : 0;
   const budgetStatus = selectedAmount <= 0 ? 'unset' : usedPercent >= 100 ? 'over' : usedPercent >= 80 ? 'warning' : 'safe';
@@ -238,7 +244,7 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
             <MaterialIcon color={budgetStatus === 'over' ? C.red : budgetStatus === 'warning' ? C.amber : C.sage} name={budgetStatus === 'over' ? 'warning_amber' : budgetStatus === 'warning' ? 'error_outline' : 'check_circle'} size={19} />
             <Text style={[styles.statusInlineText, {color: budgetStatus === 'over' ? C.red : budgetStatus === 'warning' ? C.amber : C.sage}]}>
               {budgetStatus === 'over'
-                ? `ใช้เกินงบแล้ว ${money(overspend)}`
+                ? `ใช้เกินงบที่ตั้งไว้ ${money(overspend)}${fundsOver ? ` และเกินเงินที่มีทั้งหมด ${money(fundsOver)}` : ''}`
                 : budgetStatus === 'warning'
                   ? `ใกล้เต็มงบแล้ว เหลือ ${money(remaining)}`
                   : `ยังใช้ได้อีก ${money(remaining)}`}
@@ -259,6 +265,7 @@ export default function MonthlyBudgetScreen({onNavigate, uid}: Props) {
             <View style={styles.shareCell}><Text style={styles.shareLabel}>ใช้ได้สัปดาห์ละ</Text><Text style={styles.shareAmount}>{money(financeInsight.weeklyBudget)}</Text></View>
             <View style={styles.shareCell}><Text style={styles.shareLabel}>ใช้ได้วันละ</Text><Text style={styles.shareAmount}>{money(financeInsight.averageDailyBudget)}</Text></View>
           </View>
+          <View style={styles.recommendation}><Text style={styles.recommendationLabel}>วันนี้ใช้แล้ว {money(financeInsight.todaySpent)}</Text><Text style={styles.recommendationAmount}>{financeInsight.remainingDailyBudget > 0 ? `เหลือ ${money(financeInsight.remainingDailyBudget)}` : 'ไม่เหลือแล้ว'}</Text></View>
           <View style={styles.recommendation}><Text style={styles.recommendationLabel}>สัปดาห์นี้ใช้แล้ว {financeInsight.weeklyUsagePercent}%</Text><Text style={styles.recommendationAmount}>{financeInsight.weeklyRemainingBudget < 0 ? `เกิน ${money(-financeInsight.weeklyRemainingBudget)}` : `เหลือ ${money(financeInsight.weeklyRemainingBudget)}`}</Text></View>
           <Text style={styles.inputHint}>ช่วง {financeInsight.weekStart} ถึง {financeInsight.weekEnd} • ระบบเตือนเมื่อใช้ถึง 80%</Text>
         </View> : null}
