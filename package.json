@@ -116,6 +116,7 @@
     "test:firestore-transaction-edit-rules": "npx -y firebase-tools@latest emulators:exec --only firestore --project smartlife-budget \"node tests/firestore-transaction-edit.rules.test.cjs\"",
     "test:firestore-sleep-baseline-rules": "npm run emulator:clear && npx -y firebase-tools@latest emulators:exec --only firestore --project smartlife-budget \"node tests/firestore-sleep-baseline.rules.test.cjs\"",
     "test:sleep-log": "npm run emulator:clear && npx -y firebase-tools@latest emulators:exec --only firestore,auth --project smartlife-budget \"node --experimental-strip-types --import ./scripts/register-sleep-log-test.mjs ./scripts/test-sleep-log-integration.mjs\"",
+    "test:timetable-save": "npx -y firebase-tools@latest emulators:exec --only firestore,auth --project smartlife-budget \"node --experimental-strip-types --import ./scripts/register-scan-save-test.mjs ./scripts/test-timetable-save.mjs\"",
     "emulator:clear": "node ./scripts/clear-firestore-emulator.cjs",
     "test:risk-meter-render": "node --import ./scripts/register-render-test.mjs ./scripts/render-risk-meter.mjs",
     "screenshots:verify": "node ./scripts/screenshots/capture.mjs",
