@@ -27,15 +27,14 @@ import LoadingAndSuccessModal, {
   type FeedbackPhase,
 } from "@/components/loading-success-modal";
 import { defaultTermDates, suggestedSchoolTerm } from "@/lib/term-dates";
-import { clockMinutes, timetableHoursProblem } from "@/lib/timetable-hours";
+import { clockMinutes, scheduleCourseLabel, timetableHoursProblem } from "@/lib/timetable-hours";
 import {
   buildReceiptHtml,
   normalizeReceiptItems,
   type ReceiptItem,
 } from "@/lib/receipt-html";
 import { decodeUnicodeEscapes } from "@/lib/unicode-text";
-import { useTourTarget } from "@/hooks/use-tour-target";
-import { useTour } from "@/providers/tour-provider";
+import { useTourScreen, useTourTarget } from "@/hooks/use-tour-target";
 import { useInstitution } from "@/providers/institution-provider";
 import { uploadAndAnalyzeScan, type OcrResult, type ScanStage } from "@/services/ocr";
 import { saveOcrResult } from "@/services/scan-save";
@@ -1124,11 +1123,8 @@ export default function ScanScreen({
   uid: string;
   onNavigate: UserNavigate;
 }) {
-  const { maybeStartTour } = useTour();
   const { ref: addDocumentRef, onLayout: addDocumentOnLayout } = useTourTarget("scan", "add-document");
-  useEffect(() => {
-    maybeStartTour("scan");
-  }, [maybeStartTour]);
+  useTourScreen("scan");
   const safeAreaInsets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   // Keep the dismiss action clear of Android's system navigation controls.
@@ -1178,6 +1174,10 @@ export default function ScanScreen({
   const [receiptHtmlOpen, setReceiptHtmlOpen] = useState(false);
   const [imageCardFrame, setImageCardFrame] = useState({ height: 0, top: 0 });
   const [isImagePinned, setIsImagePinned] = useState(false);
+  // For bringing a course the save refused into view: the scroller and each
+  // course card by its index.
+  const scanScrollRef = useRef<ScrollView>(null);
+  const courseCardRefs = useRef(new Map<number, View>());
   const scanGeneration = useRef(0);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1617,18 +1617,48 @@ export default function ScanScreen({
   // source image. Schedules stay wide because table columns need more space.
   const pinnedPreviewHeight = result?.scanType === "receipt" ? 220 : previewHeight;
 
+  /**
+   * Scrolls a course card into view, below the source image that pins to the
+   * top once the list is scrolled past it. A refused save names the courses in
+   * a toast; with seven cards that toast alone left the user hunting for the
+   * red ones, so the first one is brought to them.
+   */
+  const revealCourseCard = (index: number) => {
+    const card = courseCardRefs.current.get(index);
+    // `getInnerViewRef` exists on both React Native and react-native-web but
+    // is missing from this version's ScrollView typings; the typed
+    // `getInnerViewNode` returns a numeric tag, which Fabric's measureLayout
+    // no longer accepts.
+    const scroller = scanScrollRef.current as unknown as { getInnerViewRef?: () => View | null } | null;
+    const content = scroller?.getInnerViewRef?.();
+    if (!card || !content) return;
+    // Measured against the scroll content, not the window: the card's place
+    // in the content does not depend on where the list happens to be
+    // scrolled, which a tracked onScroll offset can lag behind.
+    card.measureLayout(
+      content,
+      (_x, y) => scanScrollRef.current?.scrollTo({ animated: true, y: Math.max(0, y - pinnedPreviewHeight - 24) }),
+      () => undefined,
+    );
+  };
+
   const persistOcrResult = async () => {
     if (!result || saving || saveInFlight.current) return;
     const generation = scanGeneration.current;
     const nextAsset = pendingAssets[0];
     if (result.scanType === "schedule" && entryProblems.size) {
       // Named rather than counted: with the list scrolled, "2 รายการ" alone
-      // leaves the user hunting for which cards are marked.
-      const numbers = [...entryProblems.keys()].map((index) => index + 1).join(", ");
+      // leaves the user hunting for which cards are marked. Not "incomplete"
+      // either -- a backwards end time is filled in, just wrong -- so the toast
+      // points at the red text on each card, which says what is actually wrong.
+      const problemIndexes = [...entryProblems.keys()];
+      const labels = problemIndexes.slice(0, 3).map((index) => scheduleCourseLabel(entries[index] ?? {}, index));
+      const more = problemIndexes.length > 3 ? ` และอีก ${problemIndexes.length - 3} รายการ` : "";
       showToast(
         "ยังบันทึกไม่ได้",
-        `รายวิชาที่ ${numbers} ยังกรอกไม่ครบ แก้ให้ครบหรือลบรายการนั้นออก`,
+        `ตรวจ ${labels.join(", ")}${more} ตามข้อความสีแดงในการ์ด แก้แล้วกดบันทึกอีกครั้ง`,
       );
+      revealCourseCard(problemIndexes[0]);
       return;
     }
     saveInFlight.current = true;
@@ -1806,6 +1836,7 @@ export default function ScanScreen({
           onScroll={(event) =>
             handleScanScroll(event.nativeEvent.contentOffset.y)
           }
+          ref={scanScrollRef}
           scrollEventThrottle={32}
         >
           <UserHeader
@@ -2238,6 +2269,10 @@ export default function ScanScreen({
                     entries.map((entry, index) => (
                       <View
                         key={`course-${index}`}
+                        ref={(node) => {
+                          if (node) courseCardRefs.current.set(index, node);
+                          else courseCardRefs.current.delete(index);
+                        }}
                         style={localStyles.courseCard}
                       >
                         <View style={localStyles.courseTop}>
@@ -2359,6 +2394,7 @@ export default function ScanScreen({
                           ) : null}
                           <View style={localStyles.timeInputs}>
                             <TimePickerButton
+                              error={Boolean(entryProblems.get(index)?.startTime)}
                               label="เวลาเริ่ม"
                               onPress={() =>
                                 setTimePickerTarget({
@@ -2369,6 +2405,7 @@ export default function ScanScreen({
                               value={textValue(entry.startTime, "")}
                             />
                             <TimePickerButton
+                              error={Boolean(entryProblems.get(index)?.endTime)}
                               label="เวลาสิ้นสุด"
                               onPress={() =>
                                 setTimePickerTarget({ field: "endTime", index })
@@ -2378,12 +2415,14 @@ export default function ScanScreen({
                           </View>
                           {/* Times block saving as much as a missing code or
                               day does, so they say so where they are, not
-                              only in the toast the save button raises. */}
+                              only in the toast the save button raises. The
+                              course is named so the sentence stands on its own
+                              when read aloud or seen in isolation. */}
                           {entryProblems.get(index)?.startTime || entryProblems.get(index)?.endTime ? (
-                            <Text style={localStyles.entryError}>
-                              {[entryProblems.get(index)?.startTime, entryProblems.get(index)?.endTime]
+                            <Text accessibilityLiveRegion="polite" style={localStyles.entryError}>
+                              {`${scheduleCourseLabel(entry, index)}: ${[entryProblems.get(index)?.startTime, entryProblems.get(index)?.endTime]
                                 .filter(Boolean)
-                                .join(" · ")}
+                                .join(" · ")}`}
                             </Text>
                           ) : null}
                           {textValue(entry.midtermExam, "").trim() ||
@@ -2815,10 +2854,13 @@ function SmallInput({
   );
 }
 function TimePickerButton({
+  error = false,
   label,
   onPress,
   value,
 }: {
+  /** Marks the field the card's red message is about, so the fix is one tap. */
+  error?: boolean;
   label: string;
   onPress: () => void;
   value: string;
@@ -2827,15 +2869,17 @@ function TimePickerButton({
   const visibleValue = decodeUnicodeEscapes(value) || "แตะเพื่อเลือกเวลา";
   return (
     <Touchable
+      accessibilityHint={error ? "ช่องนี้ต้องแก้ก่อนบันทึก" : undefined}
       accessibilityLabel={`${visibleLabel} ${visibleValue}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
         localStyles.timePickerButton,
+        error && localStyles.timePickerButtonError,
         pressed && localStyles.pressed,
       ]}
     >
-      <Text style={localStyles.timePickerLabel}>{visibleLabel}</Text>
+      <Text style={[localStyles.timePickerLabel, error && localStyles.dayPickerLabelError]}>{visibleLabel}</Text>
       <View style={localStyles.timePickerValue}>
         <MaterialIcon color={C.sage} name="schedule" size={16} />
         <Text style={localStyles.timePickerText}>{visibleValue}</Text>
@@ -3876,6 +3920,8 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 7,
   },
+  // Same red family as the course badge and the day chips' error state.
+  timePickerButtonError: { backgroundColor: "#fbeeed", borderColor: "#e3a19a", borderWidth: 1.5 },
   timePickerLabel: { color: C.muted, fontFamily: F.r, fontSize: 12 },
   timePickerText: { color: C.pine, flex: 1, fontFamily: F.b, fontSize: 12 },
   timePickerValue: {

@@ -21,9 +21,8 @@ import {aggregateSpending, type SpendingTransactionInput} from '@/services/spend
 import {updateAndroidHomeWidget} from '@/services/android-home-widget';
 import {MaterialIcon, UserGradientBackdrop, UserTabBar} from './user-ui';
 import {useCurrentClock} from '@/hooks/use-current-clock';
-import {useTourTarget} from '@/hooks/use-tour-target';
+import {useTourScreen, useTourTarget} from '@/hooks/use-tour-target';
 import {bangkokGreeting} from '@/lib/ux-time';
-import {useTour} from '@/providers/tour-provider';
 import {showToast} from '@/components/app-toast';
 
 /**
@@ -82,16 +81,10 @@ function QuickActions({onNavigate}: {onNavigate: (page: string) => void}) {
 
 export default function DashboardScreen({onNavigate, uid}: Props) {
   const clockNow = useCurrentClock();
-  const {maybeStartTour} = useTour();
   const {ref: bellRef, onLayout: bellOnLayout} = useTourTarget('dashboard', 'bell');
   const {ref: aiCardRef, onLayout: aiCardOnLayout} = useTourTarget('dashboard', 'ai-card');
   const {ref: weeklySpendingRef, onLayout: weeklySpendingOnLayout} = useTourTarget('dashboard', 'weekly-spending');
-  useEffect(() => {
-    maybeStartTour('dashboard');
-    // maybeStartTour is a no-op once the tab has been seen, and its identity
-    // changes when the "seen" flags finish loading from storage, so this
-    // re-fires exactly once more if the first mount raced that load.
-  }, [maybeStartTour]);
+  useTourScreen('dashboard');
   const [data, setData] = useState<Item | null>(null);
   const [sleepSheetOpen, setSleepSheetOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);

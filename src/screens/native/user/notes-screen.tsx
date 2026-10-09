@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
 import {Touchable} from '@/components/touchable';
-import Animated, {FadeInDown, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withSpring} from 'react-native-reanimated';
+import Animated, {FadeInDown, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withSequence, withSpring} from 'react-native-reanimated';
 import {Timestamp} from 'firebase/firestore';
 import {ResponsiveSafeArea} from '@/components/layout/responsive-safe-area';
 import AiActivityRecommendationCard from '@/components/ai-activity-recommendation-card';
@@ -137,11 +137,14 @@ function Metric({label, value, color = C.ink}: {color?: string; label: string; v
 
 function CompleteButton({busy, onPress}: {busy: boolean; onPress: () => void}) {
   const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({transform: [{scale: scale.value}]}));
+  const animStyle = useAnimatedStyle(() => ({transform: [{scale: scale.get()}]}));
   const handlePress = () => {
-    scale.value = withSpring(0.82, {damping: 6, stiffness: 280}, () => {
-      scale.value = withSpring(1, {damping: 8, stiffness: 200});
-    });
+    // Squeeze then settle back: one sequence instead of a second spring
+    // started from the first one's completion callback.
+    scale.set(withSequence(
+      withSpring(0.82, {damping: 6, stiffness: 280}),
+      withSpring(1, {damping: 8, stiffness: 200}),
+    ));
     onPress();
   };
   return (

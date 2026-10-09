@@ -6,15 +6,27 @@
   },
   "firestore": {
     "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+    "indexes": "firestore.indexes.json",
+    "predeploy": [
+      "node ./scripts/deploy-guard.cjs hook"
+    ]
   },
   "storage": {
-    "rules": "storage.rules"
+    "rules": "storage.rules",
+    "predeploy": [
+      "node ./scripts/deploy-guard.cjs hook"
+    ]
   },
   "functions": {
-    "source": "functions"
+    "source": "functions",
+    "predeploy": [
+      "node ./scripts/deploy-guard.cjs hook"
+    ]
   },
   "hosting": {
+    "predeploy": [
+      "node ./scripts/deploy-guard.cjs hook"
+    ],
     "public": "dist",
     "ignore": [
       "firebase.json",

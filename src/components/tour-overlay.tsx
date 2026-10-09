@@ -62,13 +62,24 @@ export default function TourOverlay() {
   };
   const radius = Math.min(step.radius ?? 16, rect.width / 2, rect.height / 2);
 
+  // The card is clamped into the visible window on both sides. A target
+  // measured off screen -- above the fold after a scroll, or below it on
+  // native, where it cannot be scrolled into view -- used to put the card off
+  // screen too, while the scrim still covered everything and took every tap:
+  // the screen froze until the app was restarted. Whatever the rect, the
+  // card and its skip button stay reachable.
+  const CARD_ROOM = 220;
   const showCardBelow = rect.top < windowHeight / 2;
   const cardVerticalStyle = showCardBelow
-    ? {top: Math.min(rect.top + rect.height + 16, windowHeight - insets.bottom - 220)}
-    : {bottom: Math.max(windowHeight - rect.top + 16, insets.bottom + 16)};
+    ? {top: Math.max(insets.top + 16, Math.min(rect.top + rect.height + 16, windowHeight - insets.bottom - CARD_ROOM))}
+    : {bottom: Math.max(insets.bottom + 16, Math.min(windowHeight - rect.top + 16, windowHeight - insets.top - CARD_ROOM))};
 
   return (
-    <View pointerEvents="auto" style={StyleSheet.absoluteFill}>
+    // `box-none`: the four bands and the card take taps, the spotlight hole
+    // does not, so the highlighted button underneath can be pressed as the
+    // card invites. A full-screen `auto` root caught taps in the hole too --
+    // on web the spotlighted button could not be reached at all.
+    <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
       {/* Four scrim bands around the target rect, dimming everything except the spotlight. */}
       <View style={[styles.band, {height: Math.max(rect.top, 0), left: 0, right: 0, top: 0}]} />
       <View style={[styles.band, {bottom: 0, left: 0, right: 0, top: rect.top + rect.height}]} />
