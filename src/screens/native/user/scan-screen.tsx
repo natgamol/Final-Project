@@ -34,8 +34,7 @@ import {
   type ReceiptItem,
 } from "@/lib/receipt-html";
 import { decodeUnicodeEscapes } from "@/lib/unicode-text";
-import { useTourTarget } from "@/hooks/use-tour-target";
-import { useTour } from "@/providers/tour-provider";
+import { useTourScreen, useTourTarget } from "@/hooks/use-tour-target";
 import { useInstitution } from "@/providers/institution-provider";
 import { uploadAndAnalyzeScan, type OcrResult, type ScanStage } from "@/services/ocr";
 import { saveOcrResult } from "@/services/scan-save";
@@ -1124,11 +1123,8 @@ export default function ScanScreen({
   uid: string;
   onNavigate: UserNavigate;
 }) {
-  const { maybeStartTour } = useTour();
   const { ref: addDocumentRef, onLayout: addDocumentOnLayout } = useTourTarget("scan", "add-document");
-  useEffect(() => {
-    maybeStartTour("scan");
-  }, [maybeStartTour]);
+  useTourScreen("scan");
   const safeAreaInsets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   // Keep the dismiss action clear of Android's system navigation controls.

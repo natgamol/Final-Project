@@ -15,7 +15,7 @@ import {loadLegacyPageData} from '@/services/legacy-data';
 import {currentMonthKey, loadMonthlyBudget} from '@/services/monthly-budget';
 import {transactions} from '@/services/firestore';
 import {EXPENSE_CATEGORIES, expenseCategoryIcon, normalizeExpenseCategory} from '@/config/expense-categories';
-import {useTourTarget} from '@/hooks/use-tour-target';
+import {useTourScreen, useTourTarget} from '@/hooks/use-tour-target';
 import {useTour} from '@/providers/tour-provider';
 import {MaterialIcon, UserGradientBackdrop, UserTabBar} from './user-ui';
 
@@ -66,7 +66,8 @@ function selectedRangeLabel(page: string, referenceDate: Date) {
 const categoryIcon = expenseCategoryIcon;
 
 export default function FinanceScreen({onNavigate, page, uid}: Props) {
-  const {maybeStartTour} = useTour();
+  const {activeTab} = useTour();
+  useTourScreen('finance');
   const {ref: periodTabsRef, onLayout: periodTabsOnLayout} = useTourTarget('finance', 'period-tabs');
   const {ref: rangeBarRef, onLayout: rangeBarOnLayout} = useTourTarget('finance', 'range-bar');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -74,9 +75,10 @@ export default function FinanceScreen({onNavigate, page, uid}: Props) {
     // Scroll to the very top before the tour measures the period-tabs bar so
     // that measureInWindow returns the element's real on-screen position, not a
     // position shifted by however far down the user has already scrolled.
-    scrollViewRef.current?.scrollTo({y: 0, animated: false});
-    maybeStartTour('finance');
-  }, [maybeStartTour]);
+    // Only when the finance tour actually starts: this used to run whenever
+    // any tour ended, jumping the page to the top for no visible reason.
+    if (activeTab === 'finance') scrollViewRef.current?.scrollTo({y: 0, animated: false});
+  }, [activeTab]);
   const [data, setData] = useState<Item | null>(null);
   const [loadError, setLoadError] = useState(false);
   const loadVersion = useRef(0);

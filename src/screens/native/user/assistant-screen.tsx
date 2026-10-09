@@ -9,8 +9,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 
 import {AsyncActionOverlay, type AsyncActionStatus} from '@/components/async-action-ui';
 import {Reveal} from '@/components/motion';
-import {useTourTarget} from '@/hooks/use-tour-target';
-import {useTour} from '@/providers/tour-provider';
+import {useTourScreen, useTourTarget} from '@/hooks/use-tour-target';
 import {appCheckErrorMessage, isAppCheckError} from '@/lib/app-check';
 import {explicitMutationClause, isReadOnlyOrAdviceRequest} from '@/services/assistant-action-intent';
 import {buildAssistantReply, confirmAssistantAction, recordAssistantTelemetry, type AssistantReply} from '@/services/assistant-tools';
@@ -940,12 +939,9 @@ const shortcutPrompts: Record<string, string> = {
 };
 
 export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: {autoAsk?: string; autoListen?: boolean; page: string; uid: string; onNavigate: UserNavigate}) {
-  const {maybeStartTour} = useTour();
   const {ref: newChatRef, onLayout: newChatOnLayout} = useTourTarget('assistant', 'new-chat');
   const {ref: composerRef, onLayout: composerOnLayout} = useTourTarget('assistant', 'composer');
-  useEffect(() => {
-    maybeStartTour('assistant');
-  }, [maybeStartTour]);
+  useTourScreen('assistant');
   const autoScrollPendingRef = useRef(true);
   const chatScrollRef = useRef<ScrollView>(null);
   const cloudWriteQueueRef = useRef<Promise<unknown>>(Promise.resolve());

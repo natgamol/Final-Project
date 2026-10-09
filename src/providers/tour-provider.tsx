@@ -18,6 +18,13 @@ type TourContextValue = {
   target: TourRect | null;
   registerTarget: (tabKey: TourTabKey, stepId: string, rect: TourRect) => void;
   maybeStartTour: (tabKey: TourTabKey) => void;
+  /**
+   * Ends `tabKey`'s tour, if it is the running one, without marking it seen:
+   * its screen stopped being the visible one, so it starts again from the
+   * first step next time that screen is focused. A stable identity, so a
+   * screen can call it from an effect cleanup.
+   */
+  leaveTour: (tabKey: TourTabKey) => void;
   next: () => void;
   skip: () => void;
   /** Clears every "seen" flag for this user and restarts at the dashboard tour. */
@@ -59,6 +66,14 @@ export function TourProvider({children}: PropsWithChildren) {
     setStepIndex(0);
     setTarget(null);
   }, [seen, ownerKey, activeTab]);
+
+  const leaveTour = useCallback((tabKey: TourTabKey) => {
+    // Functional update, so this needs no dependencies: a cleanup holding an
+    // old copy still compares against the tour running now. The step index
+    // and target are reset by `maybeStartTour` when the tour next starts, and
+    // nothing is drawn while no tab is active.
+    setActiveTab((current) => (current === tabKey ? null : current));
+  }, []);
 
   const registerTarget = useCallback((tabKey: TourTabKey, stepId: string, rect: TourRect) => {
     if (activeTab !== tabKey || activeStepId !== stepId) return;
@@ -111,10 +126,11 @@ export function TourProvider({children}: PropsWithChildren) {
     target,
     registerTarget,
     maybeStartTour,
+    leaveTour,
     next,
     skip,
     restartTour,
-  }), [activeTab, activeStepId, stepIndex, steps.length, target, registerTarget, maybeStartTour, next, skip, restartTour]);
+  }), [activeTab, activeStepId, stepIndex, steps.length, target, registerTarget, maybeStartTour, leaveTour, next, skip, restartTour]);
 
   return <TourContext.Provider value={value}>{children}</TourContext.Provider>;
 }
