@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useEffectEvent, useMemo, useRef, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NativeDateTimePicker from '@/components/date-time-picker';
 import ScheduleConflictDialog from '@/components/schedule-conflict-dialog';
@@ -1873,14 +1873,18 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
   // to just open a blank chat -- the user still had to tap the mic or retype
   // the question here. `historyReady` gates this because `sendMessage` itself
   // silently no-ops before it (chat state has to load first), so it has to be
-  // the effect's own dependency, not a one-time mount check.
+  // the effect's own dependency, not a one-time mount check. Running the
+  // action is an effect event: it must see the `sendMessage` and voice state
+  // of the render where history became ready, without those re-firing it.
   const autoActionRanRef = useRef(false);
+  const runAutoAction = useEffectEvent(() => {
+    if (autoAsk) void sendMessage(autoAsk);
+    else toggleVoiceInput();
+  });
   useEffect(() => {
     if (autoActionRanRef.current || !historyReady || (!autoAsk && !autoListen)) return;
     autoActionRanRef.current = true;
-    if (autoAsk) void sendMessage(autoAsk);
-    else toggleVoiceInput();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    runAutoAction();
   }, [autoAsk, autoListen, historyReady]);
 
   const pickImportFile = async () => {
