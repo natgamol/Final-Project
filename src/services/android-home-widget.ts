@@ -10,8 +10,16 @@ type SmartLifeHomeWidgetPayload = {
   updatedAtLabel: string;
 };
 
-type SmartLifeLineListenerModule = {
-  updateHomeWidgetAsync(
+/**
+ * The widget methods are optional on purpose. The module's JS wrapper ships in
+ * every bundle, so it resolves even on an installed build whose native side
+ * predates the widget receivers -- and there the methods are simply missing.
+ * Typing them optional makes every caller check before calling, so an older
+ * build skips the widget quietly instead of throwing "undefined is not a
+ * function" on each dashboard sync.
+ */
+type SmartLifeWidgetNativeMethods = {
+  updateHomeWidgetAsync?: (
     dateLabel: string,
     dayNumber: string,
     headline: string,
@@ -19,17 +27,17 @@ type SmartLifeLineListenerModule = {
     focusTitle: string,
     budgetLabel: string,
     updatedAtLabel: string,
-  ): Promise<void>;
-  updateSleepWidgetAsync(statusText: string): Promise<void>;
+  ) => Promise<void>;
+  updateSleepWidgetAsync?: (statusText: string) => Promise<void>;
 };
 
-let nativeModulePromise: Promise<SmartLifeLineListenerModule | null> | null = null;
+let nativeModulePromise: Promise<SmartLifeWidgetNativeMethods | null> | null = null;
 
 async function nativeModule() {
   if (Platform.OS !== 'android') return null;
   if (!nativeModulePromise) {
     nativeModulePromise = import('../../modules/smartlife-line-listener')
-      .then((module) => module.default as SmartLifeLineListenerModule)
+      .then((module) => module.default as SmartLifeWidgetNativeMethods)
       .catch(() => null);
   }
   return nativeModulePromise;
@@ -37,7 +45,7 @@ async function nativeModule() {
 
 export async function updateAndroidHomeWidget(payload: SmartLifeHomeWidgetPayload) {
   const native = await nativeModule();
-  if (!native) return;
+  if (typeof native?.updateHomeWidgetAsync !== 'function') return;
   await native.updateHomeWidgetAsync(
     payload.dateLabel,
     payload.dayNumber,
@@ -56,6 +64,6 @@ export async function updateAndroidHomeWidget(payload: SmartLifeHomeWidgetPayloa
  */
 export async function updateAndroidSleepWidget(statusText: string) {
   const native = await nativeModule();
-  if (!native) return;
+  if (typeof native?.updateSleepWidgetAsync !== 'function') return;
   await native.updateSleepWidgetAsync(statusText);
 }
