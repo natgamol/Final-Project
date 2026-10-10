@@ -17,8 +17,7 @@ import {activities, deleteCourseSeries, schedules} from '@/services/firestore';
 import {recordTaskCompleted, recordTaskPostponed} from '@/services/behavior-tracking';
 import {MaterialIcon, PLANNER_TABS, UserTabBar} from './user-ui';
 import {showToast} from '@/components/app-toast';
-import {useTourTarget} from '@/hooks/use-tour-target';
-import {useTour} from '@/providers/tour-provider';
+import {useTourScreen, useTourTarget} from '@/hooks/use-tour-target';
 
 type Page = 'smartlife_calendar_day' | 'smartlife_calendar_week' | 'smartlife_calendar_month';
 type PlannerTab = 'adaptive' | 'calendar' | 'notes';
@@ -144,11 +143,8 @@ function miniMonthDays(year: number, month: number) {
 }
 
 export default function CalendarScreen({onNavigate, page, planner, uid}: Props) {
-  const {maybeStartTour} = useTour();
   const {ref: importScheduleRef, onLayout: importScheduleOnLayout} = useTourTarget('calendar', 'import-schedule');
-  useEffect(() => {
-    maybeStartTour('calendar');
-  }, [maybeStartTour]);
+  useTourScreen('calendar');
   const {width} = useWindowDimensions();
   const calendarWidth = Math.min(Math.max(width - 32, 310), width >= 900 ? 1168 : 680);
   const [today] = useState(todayKey);

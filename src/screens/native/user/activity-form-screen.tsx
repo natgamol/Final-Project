@@ -108,15 +108,15 @@ function thaiDateText(value: string) {
 
 function SaveButton({disabled, label, onPress, saving}: {disabled: boolean; label: string; onPress: () => void; saving: boolean}) {
   const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({transform: [{scale: scale.value}]}));
+  const animStyle = useAnimatedStyle(() => ({transform: [{scale: scale.get()}]}));
   const hasSavedOnce = useRef(false);
   const handlePress = () => {
     if (disabled) return;
     // Spring-pop to give tactile "confirmed" feedback (~180ms settle)
-    scale.value = withSequence(
+    scale.set(withSequence(
       withSpring(1.04, {damping: 5, stiffness: 320}),
       withSpring(1, {damping: 10, stiffness: 180}),
-    );
+    ));
     hasSavedOnce.current = true;
     onPress();
   };

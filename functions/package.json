@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "deploy": "npm run build && npx -y firebase-tools@latest deploy --only functions",
+    "deploy": "node ../scripts/deploy-guard.cjs functions",
     "lint": "tsc --noEmit",
     "test:ocr": "npm run build && node scripts/test-ocr-pipeline.cjs",
     "test:adaptive": "npm run build && node scripts/test-adaptive-scheduling.cjs",

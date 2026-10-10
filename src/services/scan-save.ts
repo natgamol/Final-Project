@@ -5,7 +5,7 @@ import {documentNoteText} from '@/services/document-note-text';
 import {saveReviewedReceipt, type OcrResult} from '@/services/ocr';
 import {ensureUserProfile} from '@/services/auth';
 import {normalizeExpenseCategory} from '@/config/expense-categories';
-import {timetableHoursProblem} from '@/lib/timetable-hours';
+import {scheduleCourseLabel, timetableHoursProblem} from '@/lib/timetable-hours';
 
 type ScheduleEntry = {
   buildingName?: string;
@@ -143,7 +143,7 @@ function bangkokDateParts(value = new Date()) {
 
 function parseRequiredTime(value: unknown, label: string) {
   const match = text(value).match(/(\d{1,2})\s*[:.]\s*(\d{2})/);
-  if (!match) throw new Error(`\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01${label}\u0e43\u0e2b\u0e49\u0e04\u0e23\u0e1a\u0e01\u0e48\u0e2d\u0e19\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01`);
+  if (!match) throw new Error(`\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01${label} \u0e43\u0e2b\u0e49\u0e04\u0e23\u0e1a\u0e01\u0e48\u0e2d\u0e19\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01`);
   return {
     hour: Math.min(23, Math.max(0, Number(match[1]))),
     minute: Math.min(59, Math.max(0, Number(match[2]))),
@@ -268,13 +268,15 @@ function weeklyScheduleTimes(entry: ScheduleEntry, index: number, semesterStart:
   const finalSemesterDay = bangkokDate(semesterEnd.year, semesterEnd.month, semesterEnd.day, 23, 59);
   const targetWeekday = weekdayNumber(entry.day, -1);
   if (targetWeekday < 0) throw new Error(`\u0e23\u0e32\u0e22\u0e27\u0e34\u0e0a\u0e32\u0e17\u0e35\u0e48 ${index + 1} \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e40\u0e23\u0e35\u0e22\u0e19`);
-  const startTime = parseRequiredTime(entry.startTime, `เวลาเริ่มของรายวิชาที่ ${index + 1}`);
-  const endTime = parseRequiredTime(entry.endTime, `เวลาสิ้นสุดของรายวิชาที่ ${index + 1}`);
+  const startTime = parseRequiredTime(entry.startTime, `เวลาเริ่มของ${scheduleCourseLabel(entry, index)}`);
+  const endTime = parseRequiredTime(entry.endTime, `เวลาสิ้นสุดของ${scheduleCourseLabel(entry, index)}`);
   // Said out loud rather than corrected. Below, a backwards pair used to become
   // "start plus one hour" for every week of the term, so a misread timetable
-  // filled the calendar with a duration nobody chose and nothing said so.
+  // filled the calendar with a duration nobody chose and nothing said so. The
+  // review screen refuses the same pair on the card first; this is the backstop,
+  // worded the same way and thrown before anything is written.
   const hoursProblem = timetableHoursProblem(clockText(startTime), clockText(endTime));
-  if (hoursProblem) throw new Error(`รายวิชาที่ ${index + 1}: ${hoursProblem}`);
+  if (hoursProblem) throw new Error(`${scheduleCourseLabel(entry, index)}: ${hoursProblem}`);
   const dayOffset = (targetWeekday - firstSemesterDay.getUTCDay() + 7) % 7;
   let cursor = bangkokDate(semesterStart.year, semesterStart.month, semesterStart.day + dayOffset, 12, 0);
   const occurrences: {endAt: Date; startAt: Date}[] = [];

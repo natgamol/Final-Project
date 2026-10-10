@@ -208,7 +208,12 @@ export function classifyScanText(rawText: string): ScanClassification {
   if (detectAccountStatement(text)) {
     return {certain: true, confidence: 0.95, scores: {receipt, schedule}, type: "document"};
   }
-  const hardReceipt = matchCount(text, /(?:RECEIPT\s*\/\s*TAX\s*INVOICE|TAX\s*INVOICE|ใบเสร็จรับเงิน|ใบกำกับภาษี|ทำรายการสำเร็จ|จ่ายบิลสำเร็จ|โอนเงินสำเร็จ|โอนสำเร็จ|รับเงินสำเร็จ|เป๋าตัง|G\s*-?\s*WALLET|จำนวน(?:เงิน)?(?:ที่)?(?:ชำระ|จ่าย)|ยอด(?:เงิน)?ที่ชำระ)/gi);
+  // Bank-app status headers ("โอนเงินสำเร็จ" and friends) are deliberately not
+  // here. They score through RECEIPT_SIGNALS, which is enough to claim the
+  // slip as a receipt, but an anchor in this list also makes the claim
+  // `certain` and skips the Gemini review -- and a transfer slip is exactly
+  // the document that review exists for.
+  const hardReceipt = matchCount(text, /(?:RECEIPT\s*\/\s*TAX\s*INVOICE|TAX\s*INVOICE|ใบเสร็จรับเงิน|ใบกำกับภาษี|ทำรายการสำเร็จ|เป๋าตัง|G\s*-?\s*WALLET|จำนวน(?:เงิน)?(?:ที่)?(?:ชำระ|จ่าย)|ยอด(?:เงิน)?ที่ชำระ)/gi);
   const structure = scheduleStructure(text);
   // Financial documents can contain dates, times, and long numeric IDs. Two
   // receipt anchors are enough to distinguish them from timetable evidence.

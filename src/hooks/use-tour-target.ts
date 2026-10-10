@@ -1,3 +1,4 @@
+import {useIsFocused} from 'expo-router';
 import {useCallback, useEffect, useRef} from 'react';
 import type {View} from 'react-native';
 
@@ -19,14 +20,52 @@ const SETTLED_READINGS = 2;
 const GIVE_UP_MS = 1600;
 
 /**
+ * Runs `tabKey`'s tour for the screen that calls it, but only while that
+ * screen is the visible one.
+ *
+ * The navigator keeps earlier screens mounted underneath the current one. Each
+ * used to call `maybeStartTour` from a plain effect, and that function changes
+ * whenever a tour ends -- so finishing the dashboard tour re-ran the effect in
+ * every mounted screen, and a calendar screen hidden under the dashboard
+ * started its own tour over it, its spotlight landing on whatever happened to
+ * sit at those coordinates. The same happened to a screen opened by deep link
+ * (a notification) on top of a dashboard whose tour was still pending.
+ *
+ * Focus gates both ends: a tour starts only on a focused screen, and the
+ * running tour is ended -- not marked seen, so it plays again next time -- the
+ * moment its screen loses focus or unmounts, which is also what tapping a
+ * spotlighted button that navigates does.
+ */
+export function useTourScreen(tabKey: TourTabKey) {
+  const focused = useIsFocused();
+  const {leaveTour, maybeStartTour} = useTour();
+  useEffect(() => {
+    // `maybeStartTour` is a no-op once the tab has been seen, and its identity
+    // changes when the "seen" flags finish loading and when another tour ends,
+    // so a focused screen gets its turn as soon as one is due.
+    if (focused) maybeStartTour(tabKey);
+  }, [focused, maybeStartTour, tabKey]);
+  useEffect(() => {
+    if (!focused) return undefined;
+    // The cleanup runs on blur and on unmount while focused -- never for a
+    // screen that was already in the background, so a hidden copy of the
+    // same tab cannot end the visible copy's tour.
+    return () => leaveTour(tabKey);
+  }, [focused, leaveTour, tabKey]);
+}
+
+/**
  * Attach the returned `ref` + `onLayout` to whatever real button a tour step
  * should spotlight. It only measures while that exact step is the active
- * one, so screens pay nothing for this outside of a running tour.
+ * one, so screens pay nothing for this outside of a running tour -- and only
+ * while its own screen is focused, so a copy of the same screen kept mounted
+ * underneath cannot report where its (covered) button is.
  */
 export function useTourTarget(tabKey: TourTabKey, stepId: string) {
   const {activeTab, activeStepId, registerTarget} = useTour();
+  const focused = useIsFocused();
   const ref = useRef<View>(null);
-  const active = activeTab === tabKey && activeStepId === stepId;
+  const active = focused && activeTab === tabKey && activeStepId === stepId;
 
   const measure = useCallback((report?: (key: string | null) => void) => {
     if (!active) { report?.(null); return; }

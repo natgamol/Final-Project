@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useEffectEvent, useMemo, useRef, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NativeDateTimePicker from '@/components/date-time-picker';
 import ScheduleConflictDialog from '@/components/schedule-conflict-dialog';
@@ -10,8 +10,7 @@ import {router} from 'expo-router';
 
 import {AsyncActionOverlay, type AsyncActionStatus} from '@/components/async-action-ui';
 import {Reveal} from '@/components/motion';
-import {useTourTarget} from '@/hooks/use-tour-target';
-import {useTour} from '@/providers/tour-provider';
+import {useTourScreen, useTourTarget} from '@/hooks/use-tour-target';
 import {appCheckErrorMessage, isAppCheckError} from '@/lib/app-check';
 import {explicitMutationClause, isReadOnlyOrAdviceRequest} from '@/services/assistant-action-intent';
 import {buildAssistantReply, confirmAssistantAction, recordAssistantTelemetry, type AssistantReply} from '@/services/assistant-tools';
@@ -903,12 +902,9 @@ const shortcutPrompts: Record<string, string> = {
 };
 
 export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: {autoAsk?: string; autoListen?: boolean; page: string; uid: string; onNavigate: UserNavigate}) {
-  const {maybeStartTour} = useTour();
   const {ref: newChatRef, onLayout: newChatOnLayout} = useTourTarget('assistant', 'new-chat');
   const {ref: composerRef, onLayout: composerOnLayout} = useTourTarget('assistant', 'composer');
-  useEffect(() => {
-    maybeStartTour('assistant');
-  }, [maybeStartTour]);
+  useTourScreen('assistant');
   const autoScrollPendingRef = useRef(true);
   const chatScrollRef = useRef<ScrollView>(null);
   const cloudWriteQueueRef = useRef<Promise<unknown>>(Promise.resolve());
@@ -1803,7 +1799,9 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
   // to just open a blank chat -- the user still had to tap the mic or retype
   // the question here. `historyReady` gates this because `sendMessage` itself
   // silently no-ops before it (chat state has to load first), so it has to be
-  // the effect's own dependency, not a one-time mount check.
+  // the effect's own dependency, not a one-time mount check. Running the
+  // action is an effect event: it must see the `sendMessage` and voice state
+  // of the render where history became ready, without those re-firing it.
   // The ref alone only guards one mount. On web the parameter stays in the
   // address bar after it is consumed, so leaving the tab and coming back
   // remounts this screen with `autoAsk` still set and asks the question a
@@ -1811,17 +1809,19 @@ export default function AssistantScreen({autoAsk, autoListen, uid, onNavigate}: 
   // Clearing the parameter is what actually makes it single-use: the ref keeps
   // this mount honest, and the empty URL keeps every later one honest.
   const autoActionRanRef = useRef(false);
+  const runAutoAction = useEffectEvent(() => {
+    if (autoAsk) void sendMessage(autoAsk);
+    else toggleVoiceInput();
+  });
   useEffect(() => {
     if (autoActionRanRef.current || !historyReady || (!autoAsk && !autoListen)) return;
     autoActionRanRef.current = true;
-    if (autoAsk) void sendMessage(autoAsk);
-    else toggleVoiceInput();
+    runAutoAction();
     // `setParams` rewrites the current route's query in place, so this drops
     // the parameter without a navigation the user would see or could go back
     // through. The re-render it causes re-enters the effect, which the ref
     // above stops at the first line.
     router.setParams({autoAsk: undefined, autoListen: undefined});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoAsk, autoListen, historyReady]);
 
   const pickImportFile = async () => {
